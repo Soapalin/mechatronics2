@@ -10,6 +10,11 @@ volatile long unsigned int timer;
 boolean blinking = true;
 
 
+/*** IR sensor variables ***/
+volatile float irHistory[5];
+volatile float irValue =0;
+
+/*** MOTOR VARIABLES ***/
 int Steps;
 int Direction = 0;
 int StepTime = 2;
@@ -105,6 +110,7 @@ void loop() {
       debugModeOperation();
       break;
     case irMODE:
+      irModeOperation();
       break;
     case cmMODE:
       cmModeOperation();
@@ -443,6 +449,48 @@ void driveModeOperation() {
   }
 }
 
+
+void irModeOperation() {
+  static int averaging = 0;
+  static volatile float sum = 0;
+  lcd.setCursor(0,0);
+  lcd.print("IR Mode");
+  irValue = myAnalogRead(1);
+  Serial.println(irValue);
+  
+  irValue = ((irValue*5/1023)*(-53.039))+139.67; // found from excel line of best fit + datasheet
+  
+  mydelay(500);
+//  
+//  for(int i = 0; i < 4; i++) { //sliding window for ir values
+//    irHistory[i] = irHistory[i+1];
+//  }
+//  irHistory[4] = irValue;
+//  averaging++;
+//  
+//  if(averaging = 5) {
+//    for(int j = 0; j < 4; j++) {
+//      sum += irHistory[j];
+//    }
+//    lcd.setCursor(0,1);
+//    lcd.print(sum/5);
+//    averaging = 0;
+//    sum = 0;  
+//  }
+//
+//  if(whatbuttons == btnSELECT) {
+//    lcd.clear();
+//    averaging =0;
+//    sum = 0;
+//    currentMode = debugMODE;
+//  }
+
+//  mydelay(50);
+    
+  
+}
+
+
 void setModeOperation() {
   lcd.setCursor(0,0);
   lcd.print("SETTINGS Mode");
@@ -514,8 +562,6 @@ void pmModeOperation() {
       stepCount++;
     }
     
-    
-    
     stepRemaining = stepSet - stepCount;
     
     lcd.setCursor(4,1);
@@ -578,7 +624,7 @@ void cmModeOperation() {
           blinking = true;
           currentCMState = starting;
           lcd.clear();
-          currentMode = startupMODE;
+          currentMode = debugMODE;
         }
         else {
           startMotor = true;
