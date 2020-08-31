@@ -443,6 +443,14 @@ void driveModeOperation() {
   static volatile float sensorValue =0;
   static long unsigned int previousTime = 0; 
   static float revolutions = 0;
+  static int stepRemaining = 0;
+  static boolean startupCondition = true;
+  
+  
+  if(startupCondition) {
+    lcd.clear();
+    startupCondition = false;
+  }
   lcd.setCursor(0,0);
   lcd.print("Drive Mode");
 
@@ -468,16 +476,44 @@ void driveModeOperation() {
           lcd.print("               ");
           lcd.setCursor(0,1);
           lcd.print(irValue);
-          lcd.setCursor(5,1);
-          revolutions = irValue/wheelSize;
-          lcd.print(revolutions);
+          lcd.print(" ");
+          revolutions = (float) irValue/ (float) wheelSize;
+          lcd.print(revolutions, 1);
+          lcd.print(" ");
+          stepRemaining = revolutions * 4096;
+          lcd.print(stepRemaining);
           averaging =0;
           sum = 0;
       }
       break;
     case CW:
+      if(stepRemaining != 0) {
+        stepperMotor(1);
+        stepRemaining--;
+        lcd.setCursor(0,1);
+        lcd.print("              ");
+        lcd.setCursor(0,1);
+        lcd.print(irValue);
+        lcd.print(" ");
+        lcd.print(revolutions, 1);
+        lcd.print(" ");
+        lcd.print(stepRemaining);        
+      }
       break;
     case CCW:
+      if(stepRemaining != 0) {
+        stepperMotor(1);
+        stepRemaining--;
+        lcd.setCursor(0,1);
+        lcd.print("              ");
+        lcd.setCursor(0,1);
+        lcd.print(irValue);
+        lcd.print(" ");
+        lcd.print(revolutions, 1);
+        lcd.print(" ");
+        lcd.print(stepRemaining);        
+      }
+
       break;
   }
   
@@ -486,15 +522,18 @@ void driveModeOperation() {
       currentMode = startupMODE;
       Direction = 0;
       currentDriveState = idle;
+      startupCondition = true;
       lcd.clear();
       break;
     case btnUP:
       Direction =0;
       currentDriveState = CW;
+      stepRemaining = revolutions*4096;
       break;
     case btnDOWN:
       Direction = 1;
       currentDriveState = CCW;
+      stepRemaining = revolutions*4096;
       break;
     default:
       break;
@@ -654,7 +693,7 @@ void cmModeOperation() {
     blinking = false;
   }
 
-  if(mymillis() >= (timer + 1000)) {
+  if(mymillis() >= (timer + 1000) && startMotor == false) {
     blinking = true;
     lcd.setCursor(0,1);
     switch(currentCMState) {
@@ -684,19 +723,42 @@ void cmModeOperation() {
         }
         else {
           startMotor = true;
+          blinking = false;
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("CM Mode");
+
         }
         break;
     }
   }
   else {
+     lcd.setCursor(0,1);
+    if(Direction == 0) {
+      lcd.print("CW");
+      lcd.print(" Speed ");
+      lcd.print(motorSpeed);
+    }
+    else {
+      lcd.print("CCW");
+      lcd.print(" Speed ");
+      lcd.print(motorSpeed);
+    } 
     switch(whatbuttons) {
       case btnLEFT: //anticlockwise
         Direction = 1;
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("CM Mode");       
         break;
       case btnRIGHT: // clockwise
         Direction = 0;
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("CM Mode");
         break;
       case btnUP:
+
         motorSpeed++;
         if(motorSpeed > 3) {
           motorSpeed = 3;
@@ -712,6 +774,7 @@ void cmModeOperation() {
         motorSpeed = 2;
         Direction = 0;
         startMotor = false;
+        blinking = true;
         break;
     }
     
