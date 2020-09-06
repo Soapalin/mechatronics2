@@ -24,7 +24,11 @@ boolean startMotor = false;
 int wheelSize = 20;
 int stepSet = 100;
 int stepCount = 0;
+unsigned int stepRemaining = 0;
+volatile int counterCM;
 
+
+/*** MODE ***/
 enum Mode {
   startupMODE, 
   debugMODE,
@@ -34,9 +38,9 @@ enum Mode {
   setMODE,
   driveMODE
 };
-
 Mode currentMode;
 
+/*** State for flickering state for menu selection ***/
 enum debugState {
   IR,
   CM,
@@ -44,15 +48,20 @@ enum debugState {
   SET,
   E
 };
-
 debugState currentDebugState = IR;
 
 enum cmState {
   starting,
   exiting
 };
-
 cmState currentCMState = starting;
+
+enum driveModeState {
+  idle,
+  CW,
+  CCW
+};
+driveModeState currentDriveState = idle;
 
 
 enum Buttons {
@@ -64,8 +73,8 @@ enum Buttons {
   btnSELECT
 };
 
-int inputButton; 
-Buttons whatbuttons;
+
+Buttons whatbuttons; // Current button pressed
 Buttons buttonHistory[5] = { btnNONE, btnNONE, btnNONE, btnNONE, btnNONE };
 Buttons debugSequence[5] = { btnLEFT, btnLEFT, btnUP, btnRIGHT, btnSELECT };
 
@@ -75,11 +84,17 @@ ISR(TIMER2_OVF_vect) { //Chapter 16
   //Register size = 256
   // CLK = 62500 Hz
   //Timer pertick = 1/CLK = 0.016ms
-  // from 0 to 255 = 256 * 0.016ms = 4.096ms
-  //to turn on and off every 250 ms, you do 250/4.096 = 61ish 
-  milliseconds += 4; //4.096 milliseconds for prescaler 256 to fill up
-  if(startMotor) { // CM Mode only atm
-    stepperMotor(motorSpeed);
+  // from 0 to 64 = 64 * 0.016ms = 1ms
+
+  milliseconds += 1; //increment every ms
+  
+
+  if(currentDriveState != idle) { // one step every ms for drive mode
+    if(stepRemaining != 0) {
+      stepperMotor(1);
+      stepRemaining--;
+    }
+
   }
 }
 
@@ -130,6 +145,10 @@ void loop() {
 
   buttonSlidingWindow();
 
+  if(whatbuttons != btnNONE) {
+    Serial.println(whatbuttons);
+  }
+
 
 
 }
@@ -145,9 +164,9 @@ void timer_Init() {
   TCCR2A &=~(1<<COM2A0);
   TCCR2A &=~(1<<COM2A1);
 
-  // Prescaler for 256
+  // Prescaler for 64
   TCCR2B &= ~(1<<CS20);
-  TCCR2B |= (1<<CS21);
+  TCCR2B &= ~(1<<CS21);
   TCCR2B |= (1<<CS22);
 
   TIMSK2 |= (1<<TOIE2); //Enable Overflow interrupt
@@ -168,7 +187,6 @@ void mydelay(volatile long unsigned int delayTime) {
 }
 
 void printClock(int minutes, int seconds) {
-  //lcd.clear();
   lcd.setCursor(0,1);
   lcd.print("ID:12878930"); 
   lcd.setCursor(0,0);
@@ -189,30 +207,31 @@ void lcd_Init() {
 }
 
 Buttons readLCDButtons() {
+  static int inputButton; 
   inputButton = myAnalogRead(0);
   // read analog 0 with registers
   if(inputButton > 1000) {
-    mydelay(150);
+    mydelay(135);
     return btnNONE;
   }
   if(inputButton < 50) {
-    mydelay(150);
+    mydelay(135);
     return btnRIGHT;
   }
   if(inputButton < 250) {
-    mydelay(150);
+    mydelay(135);
     return btnUP;
   }
   if(inputButton < 450) {
-    mydelay(150);
+    mydelay(135);
     return btnDOWN;
   }
   if(inputButton < 650) {
-    mydelay(150);
+    mydelay(135);
     return btnLEFT;
   }
   if(inputButton < 850) {
-    mydelay(150);
+    mydelay(135);
     return btnSELECT;
   }
 
@@ -428,22 +447,15 @@ void debugModeSelection() {
   }
 }
 
-enum driveModeState {
-  idle,
-  CW,
-  CCW
-};
-
 
 
 void driveModeOperation() {
-  static driveModeState currentDriveState = idle; 
+   
   static int averaging =0;
   static volatile float sum =0;
   static volatile float sensorValue =0;
   static long unsigned int previousTime = 0; 
   static float revolutions = 0;
-  static int stepRemaining = 0;
   static boolean startupCondition = true;
   
   
@@ -460,12 +472,8 @@ void driveModeOperation() {
         if(mymillis() - previousTime >= 200) {
           averaging++;
           sensorValue = myAnalogRead(1);
-          mydelay(50);
-          sensorValue = ((sensorValue*5/1023)*(-53.039))+139.67;
-          if(sensorValue < 0) {
-            sensorValue = 0;
-          }
-          //Serial.println(sensorValue);
+          mydelay(20);
+          sensorValue = 55.55/(sensorValue*5/1023);
           sum += sensorValue; // found from excel line of best fit + datasheet
           previousTime = mymillis();
         }
@@ -487,9 +495,6 @@ void driveModeOperation() {
       }
       break;
     case CW:
-      if(stepRemaining != 0) {
-        stepperMotor(1);
-        stepRemaining--;
         lcd.setCursor(0,1);
         lcd.print("              ");
         lcd.setCursor(0,1);
@@ -498,12 +503,8 @@ void driveModeOperation() {
         lcd.print(revolutions, 1);
         lcd.print(" ");
         lcd.print(stepRemaining);        
-      }
       break;
     case CCW:
-      if(stepRemaining != 0) {
-        stepperMotor(1);
-        stepRemaining--;
         lcd.setCursor(0,1);
         lcd.print("              ");
         lcd.setCursor(0,1);
@@ -511,9 +512,7 @@ void driveModeOperation() {
         lcd.print(" ");
         lcd.print(revolutions, 1);
         lcd.print(" ");
-        lcd.print(stepRemaining);        
-      }
-
+        lcd.print(stepRemaining);
       break;
   }
   
@@ -554,12 +553,8 @@ void irModeOperation() {
     if(mymillis() - previousTime >= 200) {
       averaging++;
       sensorValue = myAnalogRead(1);
-      mydelay(50);
-      sensorValue = ((sensorValue*5/1023)*(-53.039))+139.67;
-      if(sensorValue < 0) {
-        sensorValue = 0;
-      }
-      //Serial.println(sensorValue);
+      mydelay(20);
+      sensorValue = 55.55/(sensorValue*5/1023);
       sum += sensorValue; // found from excel line of best fit + datasheet
       previousTime = mymillis();
     }
@@ -567,9 +562,10 @@ void irModeOperation() {
   else if(averaging >= 5){
       irValue = sum/averaging;
       lcd.setCursor(0,1);
-      lcd.print("       ");
+      lcd.print("          ");
       lcd.setCursor(0,1);
       lcd.print(irValue);
+      lcd.print(" cm");
       averaging =0;
       sum = 0;
   }
@@ -621,16 +617,18 @@ void pmModeOperation() {
   lcd.setCursor(0,0);
   lcd.print("PM Mode");
   lcd.setCursor(0,1);
+  lcd.print("             ");
+  lcd.setCursor(0,1);
   lcd.print(stepSet);
-  lcd.setCursor(4, 1);
+  lcd.print(" ");
   lcd.print(stepSet);
   
   if(!pmStart) {
     switch(whatbuttons) {
       case btnUP:
         stepSet += 100;
-        if(stepSet > 900) {
-          stepSet = 900;
+        if(stepSet > 30000) {
+          stepSet = 30000;
         }
         break;
       case btnDOWN:
@@ -651,26 +649,22 @@ void pmModeOperation() {
     }  
   }
   else {
-    static int stepRemaining = stepSet;
-    if(stepRemaining != 0) {
+    static int stepRemain = stepSet;
+    if(stepRemain != 0) {
       stepperMotor(1);
       stepCount++;
     }
     
-    stepRemaining = stepSet - stepCount;
+    stepRemain = stepSet - stepCount;
     
-    lcd.setCursor(4,1);
-    lcd.print(stepRemaining);
-    if((stepRemaining) < 100) {
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("PM Mode");
-      lcd.setCursor(0,1);
-      lcd.print(stepSet);
-      lcd.setCursor(4, 1);
-      lcd.print(stepRemaining);   
-    }
-    if(stepRemaining == 0)
+    lcd.setCursor(0,1);
+    lcd.print("             ");
+    lcd.setCursor(0,1);
+    lcd.print(stepSet);
+    lcd.print(" ");
+    lcd.print(stepRemain);
+
+    
     if(whatbuttons == btnSELECT) {
       lcd.clear();
       pmStart = false;
@@ -733,7 +727,8 @@ void cmModeOperation() {
     }
   }
   else {
-     lcd.setCursor(0,1);
+    stepperMotor(motorSpeed);
+    lcd.setCursor(0,1);
     if(Direction == 0) {
       lcd.print("CW");
       lcd.print(" Speed ");
@@ -758,7 +753,6 @@ void cmModeOperation() {
         lcd.print("CM Mode");
         break;
       case btnUP:
-
         motorSpeed++;
         if(motorSpeed > 3) {
           motorSpeed = 3;
@@ -775,8 +769,11 @@ void cmModeOperation() {
         Direction = 0;
         startMotor = false;
         blinking = true;
+        lcd.clear();
         break;
     }
+
+
     
   }
 
