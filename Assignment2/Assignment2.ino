@@ -25,7 +25,7 @@ int wheelSize = 20;
 int stepSet = 100;
 int stepCount = 0;
 unsigned int stepRemaining = 0;
-volatile int counterCM;
+volatile int counterCM = 0;
 
 
 /*** MODE ***/
@@ -78,24 +78,33 @@ Buttons whatbuttons; // Current button pressed
 Buttons buttonHistory[5] = { btnNONE, btnNONE, btnNONE, btnNONE, btnNONE };
 Buttons debugSequence[5] = { btnLEFT, btnLEFT, btnUP, btnRIGHT, btnSELECT };
 
-
+volatile int counter = 0;
 
 ISR(TIMER2_OVF_vect) { //Chapter 16
-  //Register size = 256
+  //Register size = 64
   // CLK = 62500 Hz
   //Timer pertick = 1/CLK = 0.016ms
   // from 0 to 64 = 64 * 0.016ms = 1ms
 
   milliseconds += 1; //increment every ms
-  
 
-  if(currentDriveState != idle) { // one step every ms for drive mode
+
+  if(startMotor) { // one step every ms for drive mode
     if(stepRemaining != 0) {
       stepperMotor(1);
       stepRemaining--;
     }
+    if(currentMode == cmMODE) {
+      counter++;
+      if(counter >= motorSpeed) {
+        stepperMotor(1);
+        counter = 0;
+      }
+    }
 
-  }
+  }  
+
+
 }
 
 
@@ -209,29 +218,24 @@ void lcd_Init() {
 Buttons readLCDButtons() {
   static int inputButton; 
   inputButton = myAnalogRead(0);
+  mydelay(120); //DEBOUNCE
   // read analog 0 with registers
   if(inputButton > 1000) {
-    mydelay(135);
     return btnNONE;
   }
   if(inputButton < 50) {
-    mydelay(135);
     return btnRIGHT;
   }
   if(inputButton < 250) {
-    mydelay(135);
     return btnUP;
   }
   if(inputButton < 450) {
-    mydelay(135);
     return btnDOWN;
   }
   if(inputButton < 650) {
-    mydelay(135);
     return btnLEFT;
   }
   if(inputButton < 850) {
-    mydelay(135);
     return btnSELECT;
   }
 
@@ -480,6 +484,9 @@ void driveModeOperation() {
       }
       else if(averaging >= 5){
           irValue = sum/averaging;
+          if(irValue > 150) {
+            irValue = 150;
+          }
           lcd.setCursor(0,1);
           lcd.print("               ");
           lcd.setCursor(0,1);
@@ -502,7 +509,12 @@ void driveModeOperation() {
         lcd.print(" ");
         lcd.print(revolutions, 1);
         lcd.print(" ");
-        lcd.print(stepRemaining);        
+        lcd.print(stepRemaining);  
+        if(stepRemaining == 0) {
+          startMotor = false;
+          motorClear();
+          currentDriveState = idle;      
+        }
       break;
     case CCW:
         lcd.setCursor(0,1);
@@ -513,6 +525,10 @@ void driveModeOperation() {
         lcd.print(revolutions, 1);
         lcd.print(" ");
         lcd.print(stepRemaining);
+        if(stepRemaining == 0) {
+          startMotor = false;
+          currentDriveState = idle;      
+        }
       break;
   }
   
@@ -522,17 +538,25 @@ void driveModeOperation() {
       Direction = 0;
       currentDriveState = idle;
       startupCondition = true;
+      startMotor = false;
+      motorClear();
       lcd.clear();
       break;
     case btnUP:
+    if(!startMotor) {
+      startMotor = true;
       Direction =0;
       currentDriveState = CW;
-      stepRemaining = revolutions*4096;
+      stepRemaining = revolutions*4096;      
+    }
       break;
     case btnDOWN:
-      Direction = 1;
-      currentDriveState = CCW;
-      stepRemaining = revolutions*4096;
+      if(!startMotor){
+        startMotor = true;
+        Direction = 1;
+        currentDriveState = CCW;
+        stepRemaining = revolutions*4096;        
+      }
       break;
     default:
       break;
@@ -561,6 +585,9 @@ void irModeOperation() {
   }
   else if(averaging >= 5){
       irValue = sum/averaging;
+      if(irValue > 150) {
+        irValue = 150;
+      }
       lcd.setCursor(0,1);
       lcd.print("          ");
       lcd.setCursor(0,1);
@@ -581,6 +608,13 @@ void irModeOperation() {
   
 }
 
+
+void motorClear() {
+  PORTB &= ~(1<<PORTB5); 
+  PORTB &= ~(1<<PORTB4);
+  PORTB &= ~(1<<PORTB3);
+  PORTD &= ~(1<<PORTD3);  
+}
 
 void setModeOperation() {
   lcd.setCursor(0,0);
@@ -642,6 +676,8 @@ void pmModeOperation() {
         break;
       case btnRIGHT:
         pmStart = true;
+        startMotor = true;
+        stepRemaining = stepSet;
         break;
       case btnSELECT:
         lcd.clear();
@@ -649,24 +685,23 @@ void pmModeOperation() {
     }  
   }
   else {
-    static int stepRemain = stepSet;
-    if(stepRemain != 0) {
-      stepperMotor(1);
-      stepCount++;
-    }
-    
-    stepRemain = stepSet - stepCount;
-    
+        
     lcd.setCursor(0,1);
     lcd.print("             ");
     lcd.setCursor(0,1);
     lcd.print(stepSet);
     lcd.print(" ");
-    lcd.print(stepRemain);
+    lcd.print(stepRemaining);
+
+    if(stepRemaining == 0) {
+      pmStart = false;
+      motorClear();
+    }
 
     
     if(whatbuttons == btnSELECT) {
       lcd.clear();
+      motorClear();
       pmStart = false;
       currentMode = debugMODE;
     }
@@ -727,17 +762,37 @@ void cmModeOperation() {
     }
   }
   else {
-    stepperMotor(motorSpeed);
+    //stepperMotor(motorSpeed);
     lcd.setCursor(0,1);
     if(Direction == 0) {
       lcd.print("CW");
-      lcd.print(" Speed ");
-      lcd.print(motorSpeed);
+      lcd.print(" Speed: ");
+      switch(motorSpeed) {
+        case 1:
+          lcd.print("fast");
+          break;
+        case 2: 
+          lcd.print("medium");
+          break;
+        case 3:
+          lcd.print("slow");
+          break;
+      }
     }
     else {
       lcd.print("CCW");
-      lcd.print(" Speed ");
-      lcd.print(motorSpeed);
+      lcd.print(" Speed: ");
+      switch(motorSpeed) {
+        case 1:
+          lcd.print("fast");
+          break;
+        case 2: 
+          lcd.print("medium");
+          break;
+        case 3:
+          lcd.print("slow");
+          break;
+      }
     } 
     switch(whatbuttons) {
       case btnLEFT: //anticlockwise
@@ -757,17 +812,24 @@ void cmModeOperation() {
         if(motorSpeed > 3) {
           motorSpeed = 3;
         }
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("CM Mode");
         break;
       case btnDOWN:
         motorSpeed--;
         if(motorSpeed < 1) {
           motorSpeed = 1;
         }
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("CM Mode");
         break;
       case btnSELECT:
         motorSpeed = 2;
         Direction = 0;
         startMotor = false;
+        motorClear();
         blinking = true;
         lcd.clear();
         break;
