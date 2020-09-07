@@ -531,16 +531,15 @@ void driveModeOperation() {
   
   switch(whatbuttons) {
     case btnSELECT:
-    if(!startMotor) {
       currentMode = startupMODE;
       Direction = 0;
       currentDriveState = idle;
       startupCondition = true;
       startMotor = false;
-      motorClear();
       stepRemaining = 0;
+      motorClear();
       lcd.clear();      
-    }
+
       break;
     case btnUP:
     if(!startMotor) {
