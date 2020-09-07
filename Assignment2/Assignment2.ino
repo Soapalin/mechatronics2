@@ -155,7 +155,9 @@ void loop() {
 
   buttonSlidingWindow(); // for the button history
 
-
+//  if(whatbuttons != btnNONE) {
+//    Serial.println(whatbuttons);
+//  }
 
 }
 
@@ -215,7 +217,7 @@ void lcd_Init() {
 Buttons readLCDButtons() {
   static int inputButton; 
   inputButton = myAnalogRead(0);
-  mydelay(120); //DEBOUNCE
+  mydelay(145); //DEBOUNCE
   // read analog 0 with registers
   if(inputButton > 1000) {
     return btnNONE;
@@ -531,6 +533,7 @@ void driveModeOperation() {
   
   switch(whatbuttons) {
     case btnSELECT:
+      // clear all non initial state
       currentMode = startupMODE;
       Direction = 0;
       currentDriveState = idle;
@@ -542,7 +545,7 @@ void driveModeOperation() {
 
       break;
     case btnUP:
-    if(!startMotor) {
+    if(!startMotor) { // if motor is running, dont do anything
       startMotor = true;
       Direction =0;
       currentDriveState = CW;
@@ -572,7 +575,7 @@ void irModeOperation() {
   lcd.setCursor(0,0);
   lcd.print("IR Mode");
 
-  if(averaging < 5) {
+  if(averaging < 5) { // averaging every 5 values found 
     if(mymillis() - previousTime >= 200) {
       averaging++;
       sensorValue = myAnalogRead(1);
@@ -629,7 +632,7 @@ void setModeOperation() {
   switch(whatbuttons) {
     case btnUP:
       wheelSize += 10;
-      if(wheelSize > 90) {
+      if(wheelSize > 90) { // Upper limit of the wheel is 90cm circumference 
         wheelSize = 90;
       }
       break;
@@ -646,7 +649,7 @@ void setModeOperation() {
   }  
 }
 
-void pmModeOperation() {
+void pmModeOperation() { 
   static boolean pmStart = false;
   lcd.setCursor(0,0);
   lcd.print("PM Mode");
@@ -657,7 +660,7 @@ void pmModeOperation() {
   lcd.print(" ");
   lcd.print(stepSet);
   
-  if(!pmStart) {
+  if(!pmStart) { // when the motor isnt running yet 
     switch(whatbuttons) {
       case btnUP:
         stepSet += 100;
@@ -694,8 +697,8 @@ void pmModeOperation() {
     lcd.print(stepRemaining);
 
     if(stepRemaining == 0) {
-      pmStart = false;
-      motorClear();
+      pmStart = false; //if no more step, goes back to idle state of pm mode 
+      motorClear(); // clear the output LEDs motor
     }
 
     
@@ -723,6 +726,8 @@ void cmModeOperation() {
     blinking = false;
   }
 
+
+  // blinking used again 
   if(mymillis() >= (timer + 1000) && startMotor == false) {
     blinking = true;
     lcd.setCursor(0,1);
@@ -736,7 +741,7 @@ void cmModeOperation() {
     }
   }
   
-  if(!startMotor) {
+  if(!startMotor) { // when idle 
     switch(whatbuttons) {
       case btnLEFT:
         currentCMState = starting;
@@ -762,13 +767,12 @@ void cmModeOperation() {
         break;
     }
   }
-  else {
-    //stepperMotor(motorSpeed);
+  else { // when motor is started 
     lcd.setCursor(0,1);
     if(Direction == 0) {
       lcd.print("CW");
       lcd.print(" Speed: ");
-      switch(motorSpeed) {
+      switch(motorSpeed) { // motorSpeed is how much delay 
         case 1:
           lcd.print("fast");
           break;
@@ -809,7 +813,7 @@ void cmModeOperation() {
         lcd.print("CM Mode");
         break;
       case btnUP:
-        motorSpeed--;
+        motorSpeed--; //decrease the delay will increase the speed 
         if(motorSpeed < 1) {
           motorSpeed = 1;
         }
@@ -818,7 +822,7 @@ void cmModeOperation() {
         lcd.print("CM Mode");
         break;
       case btnDOWN:
-        motorSpeed++;
+        motorSpeed++; // increase the delay to decrease the speed 
         if(motorSpeed > 3) {
           motorSpeed = 3;
         }
@@ -827,7 +831,7 @@ void cmModeOperation() {
         lcd.print("CM Mode");
         break;
       case btnSELECT:
-        motorSpeed = 2;
+        motorSpeed = 2; // back to initial stage 
         Direction = 0;
         startMotor = false;
         motorClear();
@@ -836,8 +840,6 @@ void cmModeOperation() {
         break;
     }
 
-
-    
   }
 
 }
