@@ -50,6 +50,7 @@ enum debugState {
 };
 debugState currentDebugState = IR;
 
+
 enum cmState {
   starting,
   exiting
@@ -63,7 +64,7 @@ enum driveModeState {
 };
 driveModeState currentDriveState = idle;
 
-
+/** Button inputs **/
 enum Buttons {
   btnNONE,
   btnRIGHT,
@@ -76,7 +77,7 @@ enum Buttons {
 
 Buttons whatbuttons; // Current button pressed
 Buttons buttonHistory[5] = { btnNONE, btnNONE, btnNONE, btnNONE, btnNONE };
-Buttons debugSequence[5] = { btnLEFT, btnLEFT, btnUP, btnRIGHT, btnSELECT };
+Buttons debugSequence[5] = { btnLEFT, btnLEFT, btnUP, btnRIGHT, btnSELECT }; // to get into debug mode
 
 volatile int counter = 0;
 
@@ -90,15 +91,15 @@ ISR(TIMER2_OVF_vect) { //Chapter 16
 
 
   if(startMotor) { // one step every ms for drive mode
-    if(stepRemaining != 0) {
+    if(stepRemaining != 0) { // used for PM and drive MODE
       stepperMotor(1);
       stepRemaining--;
     }
-    if(currentMode == cmMODE) {
-      counter++;
-      if(counter >= motorSpeed) {
-        stepperMotor(1);
-        counter = 0;
+    if(currentMode == cmMODE) { // For CM Mode only
+      counter++; // counter works as a delay for the different speeds
+      if(counter >= motorSpeed) { // if the counter is higher than motorSpeed, one step is done 
+        stepperMotor(1); 
+        counter = 0; 
       }
     }
 
@@ -121,13 +122,13 @@ void setup() {
 void loop() {
   switch(currentMode) {
     case startupMODE: 
-      printClock(mymillis()/60000, (mymillis() / 1000) % 60);
-      if(checkDebugSequence()) {
+      printClock(mymillis()/60000, (mymillis() / 1000) % 60); //Convert the values to the print the clock
+      if(checkDebugSequence()) { // check debug sequence, if it is right, go to debug sequence
         currentMode = debugMODE;
 
       }
       else if ((whatbuttons == btnSELECT) && !(checkDebugSequence())) {
-        currentMode = driveMODE;
+        currentMode = driveMODE; //goes drive mode if it doesnt equal sequence
       }
       break;
     case debugMODE:
@@ -152,11 +153,7 @@ void loop() {
       break;
   }
 
-  buttonSlidingWindow();
-
-  if(whatbuttons != btnNONE) {
-    Serial.println(whatbuttons);
-  }
+  buttonSlidingWindow(); // for the button history
 
 
 
@@ -195,7 +192,7 @@ void mydelay(volatile long unsigned int delayTime) {
   }
 }
 
-void printClock(int minutes, int seconds) {
+void printClock(int minutes, int seconds) { // print clock for startup mode
   lcd.setCursor(0,1);
   lcd.print("ID:12878930"); 
   lcd.setCursor(0,0);
@@ -357,10 +354,10 @@ void stepperMotor(int xw) {
 }
 
 void setDirection() {
-  if(Direction ==1) {
+  if(Direction ==1) { //anticlockwise
     Steps++;
   }
-  else {
+  else { //clockwise
     Steps--;
   }
   if(Steps > 7) {
@@ -382,8 +379,8 @@ void debugModeOperation() {
     blinking = false;
   }
   
-  if(mymillis() >= (timer + 1000)) {
-    blinking = true;
+  if(mymillis() >= (timer + 1000)) { // Blinks every second for the cursor
+    blinking = true; 
     lcd.setCursor(0,1);
     switch(currentDebugState) {
       case IR:
@@ -406,20 +403,20 @@ void debugModeOperation() {
     }
   }
 
-  switch(whatbuttons) {
-    case btnLEFT:
+  switch(whatbuttons) { //User inputs
+    case btnLEFT: // cursor going to the left 
       currentDebugState = currentDebugState - 1;
       if(currentDebugState < 0) {
         currentDebugState = 0;
       }
       break;
-    case btnRIGHT: 
+    case btnRIGHT:  // cursor going to the right 
       currentDebugState = currentDebugState +1;
       if(currentDebugState > 4) {
         currentDebugState = 4;
       }
       break;
-    case btnSELECT:
+    case btnSELECT: // selecting which mode 
       debugModeSelection();
       blinking = true;
       currentDebugState = IR;
@@ -454,8 +451,7 @@ void debugModeSelection() {
 
 
 void driveModeOperation() {
-   
-  static int averaging =0;
+  static int averaging =0; // averaging of the IR value
   static volatile float sum =0;
   static volatile float sensorValue =0;
   static long unsigned int previousTime = 0; 
@@ -467,11 +463,12 @@ void driveModeOperation() {
     lcd.clear();
     startupCondition = false;
   }
+  
   lcd.setCursor(0,0);
   lcd.print("Drive Mode");
 
   switch(currentDriveState) {
-    case idle:
+    case idle: //idle means that motor isnt running 
       if(averaging < 5) {
         if(mymillis() - previousTime >= 200) {
           averaging++;
@@ -482,7 +479,7 @@ void driveModeOperation() {
           previousTime = mymillis();
         }
       }
-      else if(averaging >= 5){
+      else if(averaging >= 5){ //Averaging after reading  values 
           irValue = sum/averaging;
           if(irValue > 150) {
             irValue = 150;
@@ -492,16 +489,16 @@ void driveModeOperation() {
           lcd.setCursor(0,1);
           lcd.print(irValue);
           lcd.print(" ");
-          revolutions = (float) irValue/ (float) wheelSize;
+          revolutions = (float) irValue/ (float) wheelSize; // revolutions = distance / circumference
           lcd.print(revolutions, 1);
           lcd.print(" ");
-          stepRemaining = revolutions * 4096;
+          stepRemaining = revolutions * 4096; // one revolution is 4096 steps
           lcd.print(stepRemaining);
           averaging =0;
           sum = 0;
       }
       break;
-    case CW:
+    case CW: //clockwise rotation
         lcd.setCursor(0,1);
         lcd.print("              ");
         lcd.setCursor(0,1);
@@ -511,12 +508,12 @@ void driveModeOperation() {
         lcd.print(" ");
         lcd.print(stepRemaining);  
         if(stepRemaining == 0) {
-          startMotor = false;
-          motorClear();
+          startMotor = false;  
+          motorClear(); // clear all outputing leds of motor 
           currentDriveState = idle;      
         }
       break;
-    case CCW:
+    case CCW: //anticlockwise rotation 
         lcd.setCursor(0,1);
         lcd.print("              ");
         lcd.setCursor(0,1);
@@ -534,13 +531,16 @@ void driveModeOperation() {
   
   switch(whatbuttons) {
     case btnSELECT:
+    if(!startMotor) {
       currentMode = startupMODE;
       Direction = 0;
       currentDriveState = idle;
       startupCondition = true;
       startMotor = false;
       motorClear();
-      lcd.clear();
+      stepRemaining = 0;
+      lcd.clear();      
+    }
       break;
     case btnUP:
     if(!startMotor) {
@@ -609,7 +609,8 @@ void irModeOperation() {
 }
 
 
-void motorClear() {
+void motorClear() { // clearing all the ports used by the motor - if not conflicts with IR 
+  
   PORTB &= ~(1<<PORTB5); 
   PORTB &= ~(1<<PORTB4);
   PORTB &= ~(1<<PORTB3);
@@ -701,8 +702,9 @@ void pmModeOperation() {
     
     if(whatbuttons == btnSELECT) {
       lcd.clear();
-      motorClear();
       pmStart = false;
+      stepRemaining = 0;
+      motorClear();
       currentMode = debugMODE;
     }
     
@@ -808,18 +810,18 @@ void cmModeOperation() {
         lcd.print("CM Mode");
         break;
       case btnUP:
-        motorSpeed++;
-        if(motorSpeed > 3) {
-          motorSpeed = 3;
+        motorSpeed--;
+        if(motorSpeed < 1) {
+          motorSpeed = 1;
         }
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("CM Mode");
         break;
       case btnDOWN:
-        motorSpeed--;
-        if(motorSpeed < 1) {
-          motorSpeed = 1;
+        motorSpeed++;
+        if(motorSpeed > 3) {
+          motorSpeed = 3;
         }
         lcd.clear();
         lcd.setCursor(0,0);
