@@ -579,7 +579,17 @@ void irModeOperation() {
       averaging++;
       sensorValue = myAnalogRead(1);
       mydelay(20);
-      sensorValue = 55.55/(sensorValue*5/1023);
+      sensorValue = sensorValue*5/1023;
+      if(sensorValue >= 1.5) {
+        sensorValue = -20*sensorValue +70;
+      }
+      else if(sensorValue < 1.5 && sensorValue >= 0.85) {
+        sensorValue = -44.625*sensorValue + 107.21;
+      }
+      else if(sensorValue < 0.85) {
+        sensorValue = -182.7 * sensorValue + 225.3;
+      }
+      //sensorValue = 55.55/(sensorValue*5/1023);
       sum += sensorValue; // found from excel line of best fit + datasheet
       previousTime = mymillis();
     }
