@@ -424,13 +424,6 @@ void sweepModeOperation() {
   
 }
 
-
-enum Direction {
-  LEFT,
-  RIGHT
-};
-
-
 void wallModeOperation() {
   static boolean finished = false;
   static int minimumAngle = 0;
@@ -441,135 +434,154 @@ void wallModeOperation() {
   static float d1, d2, d1d2, dwall, dfront;
   static float alpha = 15;
   static int angle = 0;
-  int distance = 0;
   int cutString;
-  static Direction currentDirection = RIGHT;
-  static boolean robotPosition;
-  static float error, oldError, angleError;
+  static float error, oldError;
   static float anglePosition = 0;
-  if(!finished) {
-    PrintMessage("CMD_SEN_ROT_" + (String) (360 - (angle*5)));
-    PrintMessage("CMD_SEN_IR");
-    currentString = Serial.readString();
-    cutString = currentString.length();
-    currentString.remove(cutString-2);
-    irValue = currentString.toFloat();
-    
-    if(irValue != irValue) { // if NaN
-      irValue = 5; // more than sensor range
-    }
-    if((irValue <= minimum) ||(angle == 0)) {
-      minimumAngle = angle*5;
-      minimum = irValue;
-    }
-    if(angle == 72) {
-      minimumAngle = 359 - minimumAngle;
-      for(int j = 0; j <= (minimumAngle) ; j++) {
-        mydelay(20);
-        PrintMessage("CMD_ACT_ROT_0_1");
-      }
-//      if(minimum < 2) {
-//        PrintMessage("CMD_ACT_LAT_0_" + (String) (2 - minimum));
-//      }
-      PrintMessage("CMD_ACT_ROT_1_90");
-      anglePosition = 0;
-      finished = true;     
-    }
-    angle++;
-  }
-  else {
-      PrintMessage("CMD_ACT_LAT_1_0.5");
-      PrintMessage("CMD_SEN_ROT_90");
-      mydelay(20);
+  static boolean stopped = false;
+  static boolean firstCal = true;
+  if(!stopped) {
+    if(!finished) {
+      PrintMessage("CMD_SEN_ROT_" + (String) (360 - (angle*5)));
       PrintMessage("CMD_SEN_IR");
-      mydelay(20);
-      currentString = Serial.readString();
-      cutString = currentString.length();
-      currentString.remove(cutString-2);     
-      d1 = currentString.toFloat();
-      PrintMessage("CMD_SEN_ROT_75");
-      mydelay(20);
-      PrintMessage("CMD_SEN_IR");
-      mydelay(20);
       currentString = Serial.readString();
       cutString = currentString.length();
       currentString.remove(cutString-2);
-      d2 = currentString.toFloat();
-      if((d1 == d1) && (d2 == d2) && ((d1 != 0) || (d2 != 0))) {
-        d1d2 = sqrt(d1*d1+ d2*d2 - 2*d1*d2*cos((alpha*3.14)/180));
-        //angleError = (asin(d1*sin(30*3.14/180)/d1d2))*180/3.14;
-        dwall = d2*d1*sin((alpha*3.14)/180)/d1d2; 
-        if(dwall > 2) {
-          error = dwall - 2; 
-          if((error <= 0.15) && (anglePosition < 0)) {
-            if(anglePosition < 0) {
-              PrintMessage("CMD_ACT_ROT_1_" + (String) (error*14));
-              anglePosition = anglePosition + error*14;              
-            }
-            else if(anglePosition > 0) {
-              PrintMessage("CMD_ACT_ROT_0_" + (String) (error*6));
-              anglePosition = anglePosition - error*6;              
-            }
-
-          }
-          else if(anglePosition > -10) {
-            PrintMessage("CMD_ACT_ROT_0_" + (String) (error*12));
-            anglePosition = anglePosition - error*12;;          
-          }
+      irValue = currentString.toFloat();
+      
+      if(irValue != irValue) { // if NaN
+        irValue = 5; // more than sensor range
+      }
+      if((irValue <= minimum) ||(angle == 0)) {
+        minimumAngle = angle*5;
+        minimum = irValue;
+      }
+      if(angle == 72) {
+        minimumAngle = 359 - minimumAngle;
+        for(int j = 0; j <= (minimumAngle) ; j++) {
+          mydelay(20);
+          PrintMessage("CMD_ACT_ROT_0_1");
         }
-        else {
-          error = 2 -  dwall;
-          if (error <= 0.15){
-            if(anglePosition > 0) {
-              PrintMessage("CMD_ACT_ROT_0_" + (String) (error*14));
-              anglePosition = anglePosition - error*14;              
-            }
-            else if(anglePosition < 0) {
-              PrintMessage("CMD_ACT_ROT_1_" + (String) (error*6));
-              anglePosition = anglePosition + error*6;               
-            }
-
-          }
-          else if(anglePosition < 10) {
-            PrintMessage("CMD_ACT_ROT_1_" + (String) (error*12));
-            anglePosition = anglePosition + error*12;          
-          }
-        }
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print(d1);
-        lcd.print(" ");
-        lcd.print(d2);
-        lcd.print(" ");
-        lcd.print(anglePosition);
-        lcd.setCursor(0,1);
-        lcd.print(dwall);
-        PrintMessage("CMD_SEN_ROT_0");
+        mydelay(20);
+        PrintMessage("CMD_ACT_ROT_1_90");
+        anglePosition = 0;
+        finished = true;     
+      }
+      angle++;
+    }
+    else {
+        PrintMessage("CMD_SEN_ROT_90");
+        mydelay(20);
         PrintMessage("CMD_SEN_IR");
+        mydelay(20);
         currentString = Serial.readString();
         cutString = currentString.length();
         currentString.remove(cutString-2);     
-        dfront = currentString.toFloat();
-        if(dfront == dfront) {
-          if(dfront <= 2.4) {
-            PrintMessage("CMD_ACT_ROT_1_90");
-          } 
-        }       
-      }
-
+        d1 = currentString.toFloat();
+        PrintMessage("CMD_SEN_ROT_75");
+        mydelay(20);
+        PrintMessage("CMD_SEN_IR");
+        mydelay(20);
+        currentString = Serial.readString();
+        cutString = currentString.length();
+        currentString.remove(cutString-2);
+        d2 = currentString.toFloat();
+        if((d1 == d1) && (d2 == d2) && ((d1 != 0) || (d2 != 0))) {
+          d1d2 = sqrt(d1*d1+ d2*d2 - 2*d1*d2*cos((alpha*3.14)/180));
+          //angleError = (asin(d1*sin(30*3.14/180)/d1d2))*180/3.14;
+          dwall = d2*d1*sin((alpha*3.14)/180)/d1d2; 
+          if(dwall > 2) {
+            error = dwall - 2; 
+            if((error <= 0.15)) {
+              if(anglePosition < -7) {
+                PrintMessage("CMD_ACT_ROT_1_" + (String) (error*18));
+                anglePosition = anglePosition + error*18;              
+              }
+              else if(anglePosition > 0) {
+                PrintMessage("CMD_ACT_ROT_0_" + (String) (error*10));
+                anglePosition = anglePosition - error*10;              
+              }
+  
+            }
+            else if(anglePosition > -12) {
+              PrintMessage("CMD_ACT_ROT_0_" + (String) (error*12));
+              anglePosition = anglePosition - error*12;;          
+            }
+          }
+          else {
+            error = 2 -  dwall;
+            if (error <= 0.15){
+              if(anglePosition > 7) {
+                PrintMessage("CMD_ACT_ROT_0_" + (String) (error*18));
+                anglePosition = anglePosition - error*18;              
+              }
+              else if(anglePosition < 0) {
+                PrintMessage("CMD_ACT_ROT_1_" + (String) (error*10));
+                anglePosition = anglePosition + error*10;               
+              }
+  
+            }
+            else if(anglePosition < 12) {
+              PrintMessage("CMD_ACT_ROT_1_" + (String) (error*12));
+              anglePosition = anglePosition + error*12;          
+            }
+          }
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print(d1);
+          lcd.print(" ");
+          lcd.print(d2);
+          lcd.print(" ");
+          lcd.print(anglePosition);
+          lcd.setCursor(0,1);
+          lcd.print(dwall);
+          PrintMessage("CMD_SEN_ROT_0");
+          PrintMessage("CMD_SEN_IR");
+          currentString = Serial.readString();
+          cutString = currentString.length();
+          currentString.remove(cutString-2);     
+          dfront = currentString.toFloat();
+          if(dfront == dfront) {
+            if(dfront <= 2.4) {
+              PrintMessage("CMD_ACT_ROT_1_90");
+            } 
+          }       
+        }
+        if(firstCal) {
+          oldError = error;
+          firstCal = false;
+        }
+        if(oldError >= error) {
+          if(oldError - error <= 0.5) {
+            PrintMessage("CMD_ACT_LAT_1_0.5");
+          }
+        }
+        else {
+          if(error - oldError <= 0.5) {
+            PrintMessage("CMD_ACT_LAT_1_0.5");
+          }
+        }
+        oldError = error;
+  
+    }
   }
   switch(whatbuttons) {
     case btnUP:
-      minimumAngle = minimum = currentValue = angle = 0;
+      firstCal = true;
+      stopped = true;
+      minimumAngle = minimum = anglePosition = angle = 0;
       break;
     case btnSELECT:
+      firstCal = true;
+      stopped = false;
       PrintMessage("CMD_SEN_ROT_0");
       finished = false;
-      minimumAngle = minimum = currentValue = angle = 0;
+      minimumAngle = minimum = anglePosition = angle = 0;
       currentMode = mainMODE;
       currentMenuState = mainState;
       startup = true;
   }
+
+
   
 }
 
