@@ -1,6 +1,7 @@
 #include <LiquidCrystal.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <Math.h>
 
 
 #define F_CPU 16000000
@@ -70,26 +71,7 @@ ISR(TIMER2_OVF_vect) { //Chapter 16
 
 }
 
-//ISR(USART_TX_vect) {
-//  if(serialReadPos != serialWritePos) {
-//    UDR0 = txBuffer[serialReadPos];
-//    serialReadPos++;
-//
-//    if(serialReadPos >= TX_BUFFER_SIZE) {
-//      serialReadPos =0;
-//    }
-//  }
-//}
-//
-//ISR(USART_RX_vect) {
-//  rxBuffer[rxWritePos] = UDR0;
-//
-//  rxWritePos++;
-//
-//  if(rxWritePos >= RX_BUFFER_SIZE) {
-//    rxWritePos = 0;
-//  }
-//}
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -103,6 +85,7 @@ void setup() {
   lcd.print("Main Menu");
   //serial_Init();
   Serial.begin(9600);
+  Serial.setTimeout(300);
   
   ADC_Init();  
 
@@ -140,59 +123,7 @@ void PrintMessage(String message)
   Serial.print(message);
   Serial.write(13); //carriage return character (ASCII 13, or '\r')
   Serial.write(10); //newline character (ASCII 10, or '\n')
-}
-
-void serial_Init() {
-  //Using USART UART
-  UBRR0H = (BRC >> 8);
-  UBRR0L = BRC;
-
-  //TX ENABLE
-  UCSR0B = (1 << TXEN0) | (1 << TXCIE0) | (1 << RXEN0) | (1 << RXCIE0);
-  UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
-
-  //RX ENABLE
-  //  UCSR0B = (1 << RXEN0) | (1 << RXCIE0);
-
-
-}
-
-char getChar() {
-  char ret = '\0';
-
-  if(rxReadPos != rxWritePos) {
-    ret = rxBuffer[rxReadPos];
-
-    rxReadPos++;
-
-    if(rxReadPos >= RX_BUFFER_SIZE) {
-      rxReadPos = 0;
-    }
-  }
-
-  return ret;
-}
-
-
-
-void appendSerial(char c) {
- txBuffer[serialWritePos] = c;
- serialWritePos++;
-
- if(serialWritePos >= TX_BUFFER_SIZE) {
-  serialWritePos = 0;
- }
-
-}
-
-void serialWrite(char c[]) {
-  for(uint8_t i = 0; i < strlen(c); i++) {
-    appendSerial(c[i]);
-  }
-
-  if(UCSR0A & (1 << UDRE0)) {
-    UDR0 = 0;
-  }
+  mydelay(40);
 }
 
 
@@ -384,32 +315,37 @@ void sweepModeOperation() {
     if(whatbuttons == btnUP) {
       PrintMessage("CMD_SEN_ROT_0");
       for(i = 0; i <= 72;i++ ) {
-
         PrintMessage("CMD_SEN_ROT_" + (String) (360 - (i*5)));
-        mydelay(30);
         PrintMessage("CMD_SEN_IR");
         mydelay(30);
         currentString = Serial.readString();
         cutString = currentString.length();
         currentString.remove(cutString-2);
         irValue = currentString.toFloat();
-        
+        mydelay(20);
         if(irValue != irValue) { // if NaN
           irValue = 5; // more than sensor range
         }
         if((irValue <= minimum) ||(i == 0)) {
           minimumAngle = i*5;
           minimum = irValue;
+          lcd.clear();
+          lcd.print(minimum);
         }
-        //lcd.print(irValue[i]);
+        
       }
       finished = true;
       minimumAngle = 359 - minimumAngle;
       for(int j = 0; j <= minimumAngle; j++) {
-        mydelay(20);
         PrintMessage("CMD_ACT_ROT_0_1");
       }
       PrintMessage("CMD_SEN_ROT_0");
+    }
+    else  if(whatbuttons == btnSELECT) {
+      startup = true;
+      finished = false;
+      currentMode = mainMODE;
+      currentMenuState = mainState;
     }
 
   }
@@ -439,6 +375,7 @@ void wallModeOperation() {
   static float anglePosition = 0;
   static boolean stopped = false;
   static boolean firstCal = true;
+  static boolean badReading = false;
   if(!stopped) {
     if(!finished) {
       PrintMessage("CMD_SEN_ROT_" + (String) (360 - (angle*5)));
@@ -450,7 +387,15 @@ void wallModeOperation() {
       
       if(irValue != irValue) { // if NaN
         irValue = 5; // more than sensor range
+        badReading = false;
       }
+      else if(irValue == 0) {
+        badReading = true;
+      }
+      else {
+        badReading = false;
+      }
+      
       if((irValue <= minimum) ||(angle == 0)) {
         minimumAngle = angle*5;
         minimum = irValue;
@@ -458,15 +403,17 @@ void wallModeOperation() {
       if(angle == 72) {
         minimumAngle = 359 - minimumAngle;
         for(int j = 0; j <= (minimumAngle) ; j++) {
-          mydelay(20);
           PrintMessage("CMD_ACT_ROT_0_1");
+          mydelay(40);
         }
-        mydelay(20);
+        mydelay(200);
         PrintMessage("CMD_ACT_ROT_1_90");
         anglePosition = 0;
-        finished = true;     
+        finished = true;
       }
-      angle++;
+      if(!badReading) {
+        angle++;
+      }
     }
     else {
         PrintMessage("CMD_SEN_ROT_90");
@@ -489,79 +436,67 @@ void wallModeOperation() {
           d1d2 = sqrt(d1*d1+ d2*d2 - 2*d1*d2*cos((alpha*3.14)/180));
           //angleError = (asin(d1*sin(30*3.14/180)/d1d2))*180/3.14;
           dwall = d2*d1*sin((alpha*3.14)/180)/d1d2; 
-          if(dwall > 2) {
-            error = dwall - 2; 
-            if((error <= 0.15)) {
-              if(anglePosition < -7) {
-                PrintMessage("CMD_ACT_ROT_1_" + (String) (error*18));
-                anglePosition = anglePosition + error*18;              
+          if(dwall != 0) {
+            if(dwall > 2) {
+              error = dwall - 2; 
+              if((error <= 0.15)) {
+                if(anglePosition < -8 && (error <= oldError)) {
+                  PrintMessage("CMD_ACT_ROT_1_" + (String) (error*14));
+                  anglePosition = anglePosition + error*18;              
+                }
+                else if((anglePosition > 0) || (oldError <= error)) {
+                  PrintMessage("CMD_ACT_ROT_0_" + (String) (error*10));
+                  anglePosition = anglePosition - error*8;              
+                }
+    
               }
-              else if(anglePosition > 0) {
-                PrintMessage("CMD_ACT_ROT_0_" + (String) (error*10));
-                anglePosition = anglePosition - error*10;              
+              else if(anglePosition > -14) {
+                PrintMessage("CMD_ACT_ROT_0_" + (String) (error*8));
+                anglePosition = anglePosition - error*12;;          
               }
-  
             }
-            else if(anglePosition > -12) {
-              PrintMessage("CMD_ACT_ROT_0_" + (String) (error*12));
-              anglePosition = anglePosition - error*12;;          
-            }
+            else {
+              error = 2 -  dwall;
+              if (error <= 0.15){
+                if(anglePosition > 8 && (error <= oldError)) {
+                  PrintMessage("CMD_ACT_ROT_0_" + (String) (error*14));
+                  anglePosition = anglePosition - error*18;              
+                }
+                else if(anglePosition < 0 || (oldError <= error)) {
+                  PrintMessage("CMD_ACT_ROT_1_" + (String) (error*10));
+                  anglePosition = anglePosition + error*8;               
+                }
+    
+              }
+              else if(anglePosition < 14) {
+                PrintMessage("CMD_ACT_ROT_1_" + (String) (error*8));
+                anglePosition = anglePosition + error*12;          
+              }
+            }   
           }
-          else {
-            error = 2 -  dwall;
-            if (error <= 0.15){
-              if(anglePosition > 7) {
-                PrintMessage("CMD_ACT_ROT_0_" + (String) (error*18));
-                anglePosition = anglePosition - error*18;              
-              }
-              else if(anglePosition < 0) {
-                PrintMessage("CMD_ACT_ROT_1_" + (String) (error*10));
-                anglePosition = anglePosition + error*10;               
-              }
-  
-            }
-            else if(anglePosition < 12) {
-              PrintMessage("CMD_ACT_ROT_1_" + (String) (error*12));
-              anglePosition = anglePosition + error*12;          
-            }
-          }
-          lcd.clear();
-          lcd.setCursor(0,0);
-          lcd.print(d1);
-          lcd.print(" ");
-          lcd.print(d2);
-          lcd.print(" ");
-          lcd.print(anglePosition);
-          lcd.setCursor(0,1);
-          lcd.print(dwall);
+//          lcd.clear();
+//          lcd.setCursor(0,0);
+//          lcd.print(d1);
+//          lcd.print(" ");
+//          lcd.print(d2);
+//          lcd.print(" ");
+//          lcd.print(anglePosition);
+//          lcd.setCursor(0,1);
+//          lcd.print(dwall);
           PrintMessage("CMD_SEN_ROT_0");
           PrintMessage("CMD_SEN_IR");
           currentString = Serial.readString();
           cutString = currentString.length();
           currentString.remove(cutString-2);     
           dfront = currentString.toFloat();
-          if(dfront == dfront) {
+          if((dfront == dfront) && (dfront != 0)) {
             if(dfront <= 2.4) {
               PrintMessage("CMD_ACT_ROT_1_90");
             } 
-          }       
-        }
-        if(firstCal) {
-          oldError = error;
-          firstCal = false;
-        }
-        if(oldError >= error) {
-          if(oldError - error <= 0.5) {
-            PrintMessage("CMD_ACT_LAT_1_0.5");
           }
+          PrintMessage("CMD_ACT_LAT_1_0.5");
+          oldError = error;      
         }
-        else {
-          if(error - oldError <= 0.5) {
-            PrintMessage("CMD_ACT_LAT_1_0.5");
-          }
-        }
-        oldError = error;
-  
     }
   }
   switch(whatbuttons) {
@@ -586,5 +521,371 @@ void wallModeOperation() {
 }
 
 void navModeOperation() {
+  float leftCorner, rightCorner;
+  float leftAngle, rightAngle;
+  float oldLeft, oldRight;
+  float maxLeft, maxRight;
+  float leftDistance, rightDistance;
+  float frontDistance;
+  String currentString;
+  int cutString;
+  static boolean foundGoal = false;
+  static int reachGoal = 0;
+  int collisions;
+  static float distanceGoal;
+  static float A,B,C;
+  static float angleGoal;
+  boolean wallWarning = false;
+  static float newDistanceGoal;
+
+
+  if(!foundGoal) {
+    PrintMessage("CMD_SEN_PING");
+    currentString = Serial.readString();
+    cutString = currentString.length();
+    currentString.remove(cutString-2);     
+    distanceGoal = currentString.toFloat();
+    if(distanceGoal != 0) {
+      foundGoal = true;
+    }
+    PrintMessage("CMD_SEN_COLL");
+//    mydelay(50);
+//    currentString = Serial.readString();
+//    cutString = currentString.length();
+//    currentString.remove(cutString-2);     
+//    collisions = currentString.toFloat();
+    lcd.clear();
+    lcd.print(distanceGoal);
+    PrintMessage("CMD_SEN_ROT_0");
+    mydelay(30);
+    PrintMessage("CMD_SEN_IR");
+    mydelay(50);
+    currentString = Serial.readString();
+    cutString = currentString.length();
+    currentString.remove(cutString-2);     
+    frontDistance = currentString.toFloat();
+    if(frontDistance != frontDistance) {
+      PrintMessage("CMD_SEN_ROT_20");
+      PrintMessage("CMD_SEN_IR");
+      currentString = Serial.readString();
+      cutString = currentString.length();
+      currentString.remove(cutString-2);     
+      leftCorner = currentString.toFloat();
   
+      PrintMessage("CMD_SEN_ROT_340");
+      PrintMessage("CMD_SEN_IR");
+      currentString = Serial.readString();
+      cutString = currentString.length();
+      currentString.remove(cutString-2);     
+      rightCorner = currentString.toFloat();
+        if((rightCorner != rightCorner) && (leftCorner != leftCorner)) {
+          PrintMessage("CMD_ACT_LAT_1_2");
+        }
+        else if((rightCorner != rightCorner) && (leftCorner == leftCorner)) {
+          if(leftCorner < 2) {
+            PrintMessage("CMD_ACT_ROT_1_10");
+          }
+          PrintMessage("CMD_ACT_LAT_1_1");
+        }
+        else if((rightCorner == rightCorner) && (leftCorner != leftCorner)) {
+          if(rightCorner < 2) {
+            PrintMessage("CMD_ACT_ROT_0_10");
+          }
+          PrintMessage("CMD_ACT_LAT_1_1");
+        }
+        else if((rightCorner > 0.75) && (leftCorner > 0.75)) {
+          PrintMessage("CMD_ACT_LAT_1_1");
+        }
+        else if((rightCorner > 0.75) && (leftCorner < 0.75)) {
+          PrintMessage("CMD_ACT_ROT_1_90");
+        }
+        else if((rightCorner < 0.75) && (leftCorner > 0.75)) {
+          PrintMessage("CMD_ACT_ROT_0_90");
+        }
+      
+    }
+    else {
+      if(frontDistance >= 2) {
+        PrintMessage("CMD_SEN_ROT_20");
+        PrintMessage("CMD_SEN_IR");
+        currentString = Serial.readString();
+        cutString = currentString.length();
+        currentString.remove(cutString-2);     
+        leftCorner = currentString.toFloat();
+
+        PrintMessage("CMD_SEN_ROT_340");
+        PrintMessage("CMD_SEN_IR");
+        currentString = Serial.readString();
+        cutString = currentString.length();
+        currentString.remove(cutString-2);     
+        rightCorner = currentString.toFloat();
+        if((rightCorner != rightCorner) && (leftCorner != leftCorner)) {
+          PrintMessage("CMD_ACT_LAT_1_" + (String)(frontDistance - 1.25));
+        }
+        else if((rightCorner != rightCorner) && (leftCorner == leftCorner)) {
+          if(leftCorner <2) {
+            PrintMessage("CMD_ACT_ROT_1_10");
+          }
+          PrintMessage("CMD_ACT_LAT_1_" + (String)(frontDistance - 1.25));
+        }
+        else if((rightCorner == rightCorner) && (leftCorner != leftCorner)) {
+          if(rightCorner < 2) {
+            PrintMessage("CMD_ACT_ROT_0_10");
+          }
+          
+          PrintMessage("CMD_ACT_LAT_1_" + (String)(frontDistance - 1.25));
+        }
+        else if((rightCorner > 0.75) && (leftCorner > 0.75)) {
+          PrintMessage("CMD_ACT_LAT_1_" + (String)(frontDistance - 1.25));
+        }
+        else if((rightCorner > 0.75) && (leftCorner < 0.75)) {
+          PrintMessage("CMD_ACT_ROT_1_30");
+        }
+        else if((rightCorner < 0.75) && (leftCorner > 0.75)) {
+          PrintMessage("CMD_ACT_ROT_0_30");
+        }
+      }
+      else {
+        for(int i = 1; i < 9; i++) {
+          PrintMessage("CMD_SEN_ROT_" + (String) (i*10));
+          mydelay(30);
+          PrintMessage("CMD_SEN_IR");
+          mydelay(30);
+          currentString = Serial.readString();
+          cutString = currentString.length();
+          currentString.remove(cutString-2);     
+          leftDistance = currentString.toFloat(); 
+ 
+
+          if(leftDistance != leftDistance) {
+//            PrintMessage("CMD_ACT_ROT_0_" + (String) (i*10));
+//            PrintMessage("CMD_ACT_LAT_1_2");
+            leftAngle = i*10;
+            i = 8;
+          }
+          else {
+            if(leftDistance > oldLeft) {
+              maxLeft = leftDistance;
+              leftAngle = i*10;
+            }
+            oldLeft = leftDistance;
+          }
+          
+        }
+
+        for(int j = 1; j < 9; j++) {
+
+            PrintMessage("CMD_SEN_ROT_" + (String) (360-(j*10)));
+            mydelay(30);
+            PrintMessage("CMD_SEN_IR");
+            mydelay(30);
+            currentString = Serial.readString();
+            cutString = currentString.length();
+            currentString.remove(cutString-2);     
+            rightDistance = currentString.toFloat(); 
+
+          if(rightDistance != rightDistance) {
+//            PrintMessage("CMD_ACT_ROT_1_" + (String) (j*10));
+//            PrintMessage("CMD_ACT_LAT_1_2");
+            rightAngle = j*10;
+            j = 8;
+          }
+          else {
+            if(rightDistance > oldRight) {
+              maxRight = rightDistance;
+              rightAngle = j*10;
+            }
+            oldRight = rightDistance;
+          }
+        }
+
+        if((rightDistance == rightDistance) && (leftDistance == leftDistance) && (leftDistance != 0) && (rightDistance != 0)) {
+          if((frontDistance > maxRight) && (frontDistance > maxLeft) && (frontDistance > 1)) {
+            PrintMessage("CMD_ACT_LAT_1_" + (String) (frontDistance -1));
+            mydelay(30);
+          }
+          if(maxRight > maxLeft) {
+            if(maxRight < 1.75) {
+              PrintMessage("CMD_ACT_ROT_1_180");
+              mydelay(30);
+            }
+            else {
+              PrintMessage("CMD_ACT_ROT_1_" + (String) rightAngle);
+              mydelay(50);
+              PrintMessage("CMD_ACT_LAT_1_" + (String) (maxRight -1));
+              mydelay(50);
+            }
+            
+          }
+          else {
+            if(maxLeft < 1.75) {
+              PrintMessage("CMD_ACT_ROT_1_180");
+              mydelay(30);
+            }
+            else {
+              PrintMessage("CMD_ACT_ROT_0_" + (String) leftAngle);
+              mydelay(50);
+              PrintMessage("CMD_ACT_LAT_1_" + (String) (maxLeft -1));
+              mydelay(50);
+            }
+          }
+        }
+        else if((rightDistance != rightDistance) || (leftDistance != leftDistance)){
+          if(rightAngle > leftAngle) {
+            PrintMessage("CMD_ACT_ROT_0_" + (String) (leftAngle));
+          }
+          else  {
+            PrintMessage("CMD_ACT_ROT_1_" + (String) (rightAngle));
+          }
+        }
+      }
+    }   
+  }
+  else {
+    lcd.clear();
+    lcd.print("within 5m");
+    lcd.print(reachGoal);
+    switch(reachGoal) {
+      case 0:
+        A = distanceGoal;
+        PrintMessage("CMD_SEN_ROT_0");
+        mydelay(30);
+        PrintMessage("CMD_SEN_IR");
+        mydelay(50);
+        currentString = Serial.readString();
+        cutString = currentString.length();
+        currentString.remove(cutString-2);     
+        frontDistance = currentString.toFloat();
+        if(frontDistance != frontDistance || (frontDistance > 1)) {
+          PrintMessage("CMD_SEN_ROT_20");
+          mydelay(30);
+          PrintMessage("CMD_SEN_IR");
+          mydelay(30);
+          currentString = Serial.readString();
+          cutString = currentString.length();
+          currentString.remove(cutString-2);     
+          leftCorner = currentString.toFloat();
+          PrintMessage("CMD_SEN_ROT_340");
+          mydelay(30);
+          PrintMessage("CMD_SEN_IR");
+          mydelay(30);
+          currentString = Serial.readString();
+          cutString = currentString.length();
+          currentString.remove(cutString-2);     
+          rightCorner = currentString.toFloat();
+          if((rightCorner != rightCorner) && (leftCorner != leftCorner)) {
+            //PrintMessage("CMD_ACT_LAT_1_0.5");
+          }
+          else if((rightCorner != rightCorner) && (leftCorner == leftCorner)) {
+            if(leftCorner < 2) {
+              PrintMessage("CMD_ACT_ROT_1_10");
+            }
+            //PrintMessage("CMD_ACT_LAT_1_0.5");
+          }
+          else if((rightCorner == rightCorner) && (leftCorner != leftCorner)) {
+            if(rightCorner < 2) {
+              PrintMessage("CMD_ACT_ROT_0_10");
+            }
+            //PrintMessage("CMD_ACT_LAT_1_0.5");
+          }
+          else if((rightCorner > 0.75) && (leftCorner > 0.75)) {
+            //PrintMessage("CMD_ACT_LAT_1_0.5");
+          }
+          else if((rightCorner > 0.75) && (leftCorner < 0.75)) {
+            PrintMessage("CMD_ACT_ROT_1_90");
+            wallWarning = true;
+          }
+          else if((rightCorner < 0.75) && (leftCorner > 0.75)) {
+            PrintMessage("CMD_ACT_ROT_0_90");
+            wallWarning = true;
+            mydelay(30);
+          }
+          PrintMessage("CMD_SEN_PING");
+          mydelay(30);
+          currentString = Serial.readString();
+          cutString = currentString.length();
+          currentString.remove(cutString-2);     
+          distanceGoal = currentString.toFloat();
+          if(distanceGoal == 0) {
+            foundGoal = false;
+          }
+          else if(!wallWarning) {
+            mydelay(0);
+            PrintMessage("CMD_ACT_LAT_1_0.5");
+            mydelay(30);
+            C = distanceGoal;
+            B = 0.52;
+            angleGoal = acos((B*B+C*C-A*A)/(2*B*C));
+            angleGoal = 180 - (angleGoal *(180/3.14));
+            lcd.print(" ");
+            lcd.print(angleGoal);
+            lcd.setCursor(0,1);
+            lcd.print(A);
+            lcd.print(" ");
+            lcd.print(B);
+            lcd.print(" ");
+            lcd.print(C);
+            mydelay(1000);
+            if((angleGoal != 0) && (angleGoal == angleGoal)) {
+              PrintMessage("CMD_ACT_ROT_1_" + (String) (angleGoal));
+              reachGoal++;
+            }
+            
+          }
+        }
+        else {
+          PrintMessage("CMD_ACT_ROT_0_20");
+          mydelay(200);
+        }
+        break;
+      case 1:
+        PrintMessage("CMD_SEN_IR");
+        mydelay(50);
+        currentString = Serial.readString();
+        cutString = currentString.length();
+        currentString.remove(cutString-2);     
+        frontDistance = currentString.toFloat();
+        if((frontDistance != frontDistance) || (frontDistance > 1.5)) {
+          PrintMessage("CMD_ACT_LAT_1_0.5");
+          mydelay(50);
+          PrintMessage("CMD_SEN_PING");
+          mydelay(50);
+          currentString = Serial.readString();
+          cutString = currentString.length();
+          currentString.remove(cutString-2);     
+          newDistanceGoal = currentString.toFloat();
+          if(newDistanceGoal > distanceGoal && (newDistanceGoal == newDistanceGoal) && (newDistanceGoal == 0)) {
+            mydelay(50);
+            PrintMessage("CMD_ACT_ROT_0_180");
+            mydelay(50);
+            PrintMessage("CMD_ACT_LAT_1_0.5");
+            reachGoal++;
+          }
+          else if(newDistanceGoal < distanceGoal){
+            reachGoal++;
+          }
+        }
+        else {
+          PrintMessage("CMD_ACT_ROT_0_20");
+          mydelay(200);
+          reachGoal = 0;
+        }
+        break;
+//      case 2:
+//        break;
+    }
+  }
+  
+  switch(whatbuttons) {
+    btnSELECT:
+      startup = true;
+      currentMode = mainMODE;
+      currentMenuState = mainState;
+      break;
+      
+  }
+
+   
+
+
 }
