@@ -3,21 +3,6 @@
 #include <avr/interrupt.h>
 #include <Math.h>
 
-
-#define F_CPU 16000000
-#define BAUD 9600
-#define BRC ((F_CPU/16/BAUD) -1)
-#define TX_BUFFER_SIZE 128
-#define RX_BUFFER_SIZE 128
-
-
-char rxBuffer[RX_BUFFER_SIZE];
-uint8_t rxReadPos = 0;
-uint8_t rxWritePos =0;
-char txBuffer[TX_BUFFER_SIZE];
-uint8_t serialReadPos =0;
-uint8_t serialWritePos = 0;
-
 float newDistanceGoal;
 boolean foundGoal = false;
 int reachGoal = 0;
@@ -86,7 +71,7 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print("12878930");
   lcd.setCursor(0,1);
-  lcd.print("Main Menu");
+  lcd.print("Main menu");
   //serial_Init();
   Serial.begin(9600);
   Serial.setTimeout(350); // how long serial readString takes before timeout
@@ -165,7 +150,7 @@ void mydelay(volatile long unsigned int delayTime) {
 Buttons readLCDButtons() {
   static int inputButton; 
   inputButton = myAnalogRead(0);
-  mydelay(150); //DEBOUNCE
+  mydelay(175); //DEBOUNCE
   // read analog 0 with registers
   if(inputButton > 1000) {
     return btnNONE;
@@ -267,7 +252,7 @@ void stateToMode() { //State of the main menu (which mode is going to be selecte
 void stateToText() { //Printing for the main menu
   switch(currentMenuState) {
     case mainState:
-      lcd.print("Main Menu");
+      lcd.print("Main menu");
       break;
     case controlState:
       lcd.print("Control");
@@ -619,15 +604,28 @@ void navModeOperation() {
   int cutString;
   int collisions;
   boolean wallWarning = false;
+  float tempGoal;
   
   if(!foundGoal) {
-    PrintMessage("CMD_SEN_PING"); // check if the goal is within 5m
-    currentString = Serial.readString();
-    cutString = currentString.length();
-    currentString.remove(cutString-2);     
-    distanceGoal = currentString.toFloat();
+    do {
+      PrintMessage("CMD_SEN_PING");
+      mydelay(100);
+      currentString = Serial.readString();
+      cutString = currentString.length();
+      currentString.remove(cutString-2);     
+      distanceGoal = currentString.toFloat();
+
+      PrintMessage("CMD_SEN_PING");
+      mydelay(100);
+      currentString = Serial.readString();
+      cutString = currentString.length();
+      currentString.remove(cutString-2);     
+      tempGoal = currentString.toFloat();
+    } while(distanceGoal != tempGoal);
     if(distanceGoal != 0) { // will return 0 if it outside of the scope
-      foundGoal = true;
+      if(distanceGoal < 4.4) { // if within 4.4, it found the goal + some error margin
+        foundGoal = true;
+      }
     }
     whatbuttons = readLCDButtons();
     if(whatbuttons == btnSELECT) {
@@ -760,6 +758,7 @@ void navModeOperation() {
             currentMenuState = mainState;
             return;
         }
+        // check the corners values to change if needed bc of clipping corners
         if((rightCorner != rightCorner) && (leftCorner != leftCorner)) {
           PrintMessage("CMD_ACT_LAT_1_" + (String)(frontDistance - 1.25));
         }
@@ -799,7 +798,7 @@ void navModeOperation() {
         }
       }
       else { // if front distance is smaller than 2 
-        for(int i = 1; i < 9; i++) {  //check left distance every 10m
+        for(int i = 1; i < 9; i++) {  //check left distance every 10 degrees 
           PrintMessage("CMD_SEN_ROT_" + (String) (i*10));
           mydelay(30);
           PrintMessage("CMD_SEN_IR");
@@ -926,17 +925,24 @@ void navModeOperation() {
     }   
   }
   else { //if within 5 m
-    lcd.clear();
-    lcd.print(reachGoal);
     switch(reachGoal) {
       case 0:
+      do { // do while to check if the goal ping is the right values and not errors, done later too
         PrintMessage("CMD_SEN_PING");
-        mydelay(30);
+        mydelay(100);
         currentString = Serial.readString();
         cutString = currentString.length();
         currentString.remove(cutString-2);     
         distanceGoal = currentString.toFloat();
-        if(distanceGoal <= 0.6) {
+
+        PrintMessage("CMD_SEN_PING");
+        mydelay(100);
+        currentString = Serial.readString();
+        cutString = currentString.length();
+        currentString.remove(cutString-2);     
+        tempGoal = currentString.toFloat();
+      } while(distanceGoal != tempGoal);
+        if(distanceGoal <= 0.8) { // if within 0.8, really close to the gal
           reachGoal = 3;
         }
         A = distanceGoal;
@@ -969,7 +975,7 @@ void navModeOperation() {
           }
           cutString = currentString.length();
           currentString.remove(cutString-2);     
-          leftCorner = currentString.toFloat();
+          leftCorner = currentString.toFloat(); // check left corner 
           PrintMessage("CMD_SEN_ROT_340");
           mydelay(30);
           PrintMessage("CMD_SEN_IR");
@@ -990,7 +996,7 @@ void navModeOperation() {
           }
           cutString = currentString.length();
           currentString.remove(cutString-2);     
-          rightCorner = currentString.toFloat();
+          rightCorner = currentString.toFloat(); // check right corner 
           
           if((rightCorner != rightCorner) || (leftCorner != leftCorner)) {
             //PrintMessage("CMD_ACT_LAT_1_0.5");
@@ -999,13 +1005,25 @@ void navModeOperation() {
             PrintMessage("CMD_ACT_ROT_1_180");
             wallWarning = true;
           }
-          PrintMessage("CMD_SEN_PING");
-          mydelay(30);
-          currentString = Serial.readString();
-          cutString = currentString.length();
-          currentString.remove(cutString-2);     
-          distanceGoal = currentString.toFloat();
-          if(distanceGoal <= 0.6) {
+          mydelay(50);
+
+          do { // check the values of the ping twice to make sure that it is valid 
+            PrintMessage("CMD_SEN_PING");
+            mydelay(100);
+            currentString = Serial.readString();
+            cutString = currentString.length();
+            currentString.remove(cutString-2);     
+            distanceGoal = currentString.toFloat();
+
+            PrintMessage("CMD_SEN_PING");
+            mydelay(100);
+            currentString = Serial.readString();
+            cutString = currentString.length();
+            currentString.remove(cutString-2);     
+            tempGoal = currentString.toFloat();
+          } while(distanceGoal != tempGoal);
+
+          if(distanceGoal <= 0.8) {
             reachGoal = 3;
           }
           mydelay(100);
@@ -1030,7 +1048,12 @@ void navModeOperation() {
             C = distanceGoal;
             B = 0.52;
             angleGoal = acos((B*B+C*C-A*A)/(2*B*C)); // calculate the angle to turn towards the goal with trig
-            angleGoal = 190 - (angleGoal *(180/3.14));
+            while(angleGoal > 1)
+            {
+               C += 0.1;
+               angleGoal = acos((B*B+C*C-A*A)/(2*B*C)); // calculate the angle to turn towards the goal with trig
+            }
+            angleGoal = 180 - (angleGoal *(180/3.14));
             if((angleGoal != 0) && (angleGoal == angleGoal)) { // if good reading, turn
               PrintMessage("CMD_ACT_ROT_1_" + (String) (angleGoal));
               reachGoal++;
@@ -1054,16 +1077,30 @@ void navModeOperation() {
         mydelay(100);
          
         if((frontDistance != frontDistance) || (frontDistance > 1)) {
-          PrintMessage("CMD_ACT_LAT_1_0.5");
-          mydelay(50);
-          PrintMessage("CMD_SEN_PING");
-          mydelay(50);
-          currentString = Serial.readString();
-          cutString = currentString.length();
-          currentString.remove(cutString-2);     
-          newDistanceGoal = currentString.toFloat();
-          if(distanceGoal <= 0.6) {
-            reachGoal = 3;
+          PrintMessage("CMD_ACT_LAT_1_0.2");
+
+          do {
+            mydelay(50);
+            PrintMessage("CMD_SEN_PING");
+            mydelay(50);
+            currentString = Serial.readString();
+            cutString = currentString.length();
+            currentString.remove(cutString-2);     
+            newDistanceGoal = currentString.toFloat();
+            mydelay(50);
+            PrintMessage("CMD_SEN_PING");
+            mydelay(50);
+            currentString = Serial.readString();
+            cutString = currentString.length();
+            currentString.remove(cutString-2);     
+            tempGoal = currentString.toFloat();
+
+          } while(tempGoal != newDistanceGoal);
+          if(newDistanceGoal <= 0.8) {
+            reachGoal = 3 ;
+          }
+          if(distanceGoal <= 0.8) {
+            reachGoal = 3; 
           }
           whatbuttons = readLCDButtons();
           if(whatbuttons == btnSELECT) {
@@ -1078,16 +1115,16 @@ void navModeOperation() {
               return;
           }
           mydelay(100);
-           // if new distance is bigger; wrong angle and do a 180 
+           // if new distance is bigger; wrong angle and go the other way
           if((newDistanceGoal > distanceGoal) && (newDistanceGoal == newDistanceGoal) && (newDistanceGoal != 0)) {
             mydelay(50);
-            PrintMessage("CMD_ACT_ROT_0_180");
+            PrintMessage("CMD_ACT_ROT_0_" + (String) (angleGoal*2)); // wrong angle so turn the other way towards the goal 
             mydelay(50);
-            PrintMessage("CMD_ACT_LAT_1_0.5");
+            PrintMessage("CMD_ACT_LAT_1_0.2");
             reachGoal++;
           }
           else if(newDistanceGoal < distanceGoal){ // right angle 
-            PrintMessage("CMD_ACT_LAT_0_0.5");
+            PrintMessage("CMD_ACT_LAT_0_0.2");
             reachGoal++;
           }
            
@@ -1111,7 +1148,7 @@ void navModeOperation() {
         currentString = Serial.readString();
         cutString = currentString.length();
         currentString.remove(cutString-2);     
-        frontDistance = currentString.toFloat();
+        frontDistance = currentString.toFloat(); // check front distance 
         whatbuttons = readLCDButtons();
         if(whatbuttons == btnSELECT) {
             startup = true;
@@ -1125,21 +1162,29 @@ void navModeOperation() {
             return;
         }
         mydelay(100);
-        if((frontDistance != frontDistance) || (frontDistance != 0) || ((frontDistance == frontDistance) && (frontDistance > newDistanceGoal))) {
-          if(frontDistance < 0.5) { // if too close to goal
-            PrintMessage("CMD_ACT_LAT_0_" + (String) (0.5 - newDistanceGoal));
+        // if front distance isn't an error and bigger than the distance to goal ( no walls) 
+        if((frontDistance != frontDistance)||((frontDistance != 0) && ((frontDistance == frontDistance) && (frontDistance > newDistanceGoal)))) {
+          mydelay(100);
+          if(frontDistance > 0.8) {
+            PrintMessage("CMD_ACT_LAT_1_" + (String) (newDistanceGoal - 0.5)); // reach the goal 
           }
-          else {
-            PrintMessage("CMD_ACT_LAT_1_" + (String) (newDistanceGoal - 0.5));
-          }
-          PrintMessage("CMD_SEN_PING");
-          mydelay(30);
-          currentString = Serial.readString();
-          cutString = currentString.length();
-          currentString.remove(cutString-2);     
-          distanceGoal = currentString.toFloat();
-          if(distanceGoal <= 0.7) {
-            reachGoal++;
+          do { // check the ping twice for validity 
+            PrintMessage("CMD_SEN_PING");
+            mydelay(100);
+            currentString = Serial.readString();
+            cutString = currentString.length();
+            currentString.remove(cutString-2);     
+            distanceGoal = currentString.toFloat();
+
+            PrintMessage("CMD_SEN_PING");
+            mydelay(100);
+            currentString = Serial.readString();
+            cutString = currentString.length();
+            currentString.remove(cutString-2);     
+            tempGoal = currentString.toFloat();
+          } while(distanceGoal != tempGoal);
+          if(distanceGoal <= 0.8) {
+            reachGoal++; 
           }
           else {
             reachGoal = 0;
@@ -1147,17 +1192,26 @@ void navModeOperation() {
           
         }
         else {
-          reachGoal = 0;
+          if((frontDistance != 0)) {  // if front distance gives an error, start again 
+            reachGoal = 0;
+          }
+          
         }
         break;
-      case 3:
-      //0.5m from the goal, finished navigation
+      case 3: // goal is found by the robot and print finished
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Finished");
         lcd.setCursor(0,1);
         lcd.print("Navigation");
         //reachGoal++;
+        break;
+      case 4:
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Finished");
+        lcd.setCursor(0,1);
+        lcd.print("Navigation");
         break;
     }
   }
