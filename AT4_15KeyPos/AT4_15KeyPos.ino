@@ -28,7 +28,8 @@ boolean startup = true;
 boolean completed = false;
 float currentAngle = 0; // to keep track of the direction of the robot 
 
-int firePosition;
+int firePosition = 99; // if not 99, it means that the fire is found before the water and will tell us where
+boolean startOp = true;
 
 enum Objective {
   idle,
@@ -120,6 +121,7 @@ void loop() {
       milliseconds = 0;
       startup = false;
       currentObjective = W;
+      //turnRight(180);
     }
   }
 }
@@ -250,13 +252,18 @@ int myAnalogRead(int Pin)
   return ADC; 
 }
 
-uint8_t keyPosition = 0;
+uint8_t keyPosition = 0; 
 
 void findGoal() {
   switch(keyPosition) {
     case 0: //start position at 2 4 0  
       if(withinPerimeter(4, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -268,7 +275,12 @@ void findGoal() {
       forward(2);
       mydelay(1000);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -279,7 +291,12 @@ void findGoal() {
       turnRight(90);
       forward(4);
       if(withinPerimeter(2.5, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -293,7 +310,12 @@ void findGoal() {
       turnLeft(90);
       forward(3);
       if(withinPerimeter(2, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -302,7 +324,12 @@ void findGoal() {
     case 4: // position 10 4 0
       forward(3);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -312,7 +339,12 @@ void findGoal() {
       turnLeft(90);
       forward(4);
       if(withinPerimeter(2, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -321,7 +353,12 @@ void findGoal() {
     case 6: // position at 10 13 270
       forward(5);
       if(withinPerimeter(2, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -331,7 +368,12 @@ void findGoal() {
       turnLeft(90);
       forward(3);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -343,7 +385,12 @@ void findGoal() {
       turnLeft(90);
       forward(3);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -354,7 +401,12 @@ void findGoal() {
       turnRight(90);
       forward(2);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -364,7 +416,12 @@ void findGoal() {
       turnRight(90);
       forward(3);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -373,7 +430,12 @@ void findGoal() {
     case 11: // position at 14 18 0
       forward(4);
       if(withinPerimeter(4, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -387,7 +449,12 @@ void findGoal() {
       turnRight(90);
       forward(2);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -398,7 +465,12 @@ void findGoal() {
       turnRight(90);
       forward(4);
       if(withinPerimeter(2.5, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -411,7 +483,12 @@ void findGoal() {
       turnLeft(90);
       forward(1);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -420,7 +497,12 @@ void findGoal() {
     case 15: // position at 11 18 0
       forward(4);    
       if(withinPerimeter(2, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -430,7 +512,12 @@ void findGoal() {
       turnRight(90);
       forward(3);
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -439,7 +526,12 @@ void findGoal() {
     case 17: // position at 18 4 90
       forward(4);    
       if(withinPerimeter(3, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -449,7 +541,12 @@ void findGoal() {
       turnRight(90);
       forward(4);    
       if(withinPerimeter(2.5, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
       }
       else {
         keyPosition++;
@@ -459,7 +556,13 @@ void findGoal() {
       turnRight(90);
       forward(3);    
       if(withinPerimeter(2, distanceToGoal())) {
-        waterCompletion = GoalFound;
+        if(waterCompletion == GoalFinding) {
+          waterCompletion = GoalFound;
+        }
+        else if(fireCompletion == GoalFinding && waterCompletion == GoalReached) {
+          fireCompletion = GoalFound;
+        }
+        
       }
       else {
         keyPosition++;
@@ -584,7 +687,7 @@ void checkGoalWater() {
       break;
     case 1: // move to one direction
       frontDistance = sensorValue();
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         forward(2);
       }
       else if(frontDistance > 1.2) {
@@ -597,7 +700,7 @@ void checkGoalWater() {
           goalIdentified = true;
         }
         else  if(whichGoal == 2)  {
-          if(frontDistance > 2.5) {
+          if(frontDistance > 2.3) {
             backward(2);
           }
           else if(frontDistance > 1.2) {
@@ -609,7 +712,7 @@ void checkGoalWater() {
           return;
         }
       }
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         backward(2);
       }
       else if(frontDistance > 1.2) {
@@ -620,7 +723,7 @@ void checkGoalWater() {
     case 2:
       turnRight(90);
       frontDistance = sensorValue();
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         forward(2);
       }
       else if(frontDistance > 1.2) {
@@ -632,7 +735,7 @@ void checkGoalWater() {
         if(whichGoal == 1) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2.5)  {
+        else  if(whichGoal == 2.3)  {
           if(frontDistance > 2) {
             backward(2);
           }
@@ -648,7 +751,7 @@ void checkGoalWater() {
       }
 
       exploredAngle++;
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         backward(2);
       }
       else if(frontDistance > 1.2) {
@@ -659,7 +762,7 @@ void checkGoalWater() {
     case  3:
       turnRight(90);
       frontDistance = sensorValue();
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         forward(2);
       }
       else if(frontDistance > 1.2) {
@@ -671,7 +774,7 @@ void checkGoalWater() {
         if(whichGoal == 1) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2.5) {
+        else  if(whichGoal == 2.3) {
           if(frontDistance > 2) {
             backward(2);
           }
@@ -686,7 +789,7 @@ void checkGoalWater() {
         }
       }
       exploredAngle++;
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         backward(2);
       }
       else if(frontDistance > 1.2) {
@@ -696,7 +799,7 @@ void checkGoalWater() {
     case  4:
       turnRight(90);
       frontDistance = sensorValue();
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         forward(2);
       }
       else if(frontDistance > 1.2) {
@@ -709,7 +812,7 @@ void checkGoalWater() {
           goalIdentified = true;
         }
         else  if(whichGoal == 2)  {
-          if(frontDistance > 2.5) {
+          if(frontDistance > 2.3) {
             backward(2);
           }
           else if(frontDistance > 1.2) {
@@ -722,7 +825,7 @@ void checkGoalWater() {
           return;
         }
       }
-      if(frontDistance > 2.5) {
+      if(frontDistance > 2.3) {
         backward(2);
       }
       else if(frontDistance > 1.2) {
@@ -980,7 +1083,7 @@ void checkGoalFire() {
         break;
     }
     fireCompletion = GoalReached;
-    keyPosition++;
+    //keyPosition++;
     return;
   }
 
@@ -1049,11 +1152,20 @@ void waterOperation() {
       break;
   }
 }
-
+boolean back = true;
 void fireOperation() {
   switch(fireCompletion) {
     case GoalFinding:
-      findGoal();
+      if(firePosition != 99) {
+        if(back) {
+          keyPosition--;
+          back = false;
+        }
+        backToFire();
+      }
+      else {
+        findGoal();
+      }
       break;
     case GoalFound:
       checkGoalFire();
@@ -1066,124 +1178,500 @@ void fireOperation() {
   }
 }
 
-void homeOperation() {
-  static boolean startOp = true;
-  
+void backToFire() {
+  //static boolean startOp = true;
+  lcd.print(keyPosition);
+  lcd.print(" ");
+  lcd.print(firePosition);
   switch(keyPosition) {
     case 19:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(3);
+      keyPosition--;
+      break;
+    case 18:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(90);
+        startOp = false;
+      }    
+      turnLeft(90);
+      forward(4);
+      keyPosition--;
+      break;
+    case 17:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(90);
+        startOp = false;
+      }
+      turnLeft(90);
+      forward(4);
+      keyPosition--;
+      break;
+    case 16:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(3);
+      keyPosition--;
+      break;
+    case 15:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(90);
+        startOp = false;
+      }
+      turnLeft(90);
+      forward(4);
+      keyPosition--;
+      break;
+    case 14:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(1);
+      turnRight(90);
+      forward(3.5);
+      turnRight(90);
+      forward(1);
+      keyPosition--;
+      break;
+    case 13:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(4);
+      turnLeft(90);
+      forward(2);
+      keyPosition--;
+      break;
+    case 12:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(2);
+      turnLeft(90);
+      forward(4);
+      turnLeft(90);
+      forward(0.5);
+      turnRight(90);
+      keyPosition--;
+      break;
+    case 11:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(4);
+      keyPosition--;
+      break;
+    case 10:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(3);
+      turnLeft(90);
+      keyPosition--;
+      break;
+    case 9:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnRight(180);
+        startOp = false;
+      }
+      forward(2);
+      turnRight(90);
+      forward(3);
+      keyPosition--;
+      break;
+    case 8:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
         startOp = false;
       }
       backward(3);
+      turnLeft(90);
+      forward(3);
+      keyPosition--;
+      break;
+    case 7:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnRight(180);
+        forward(3);
+        keyPosition--;
+        startOp = false;
+      }
+      else {
+        turnLeft(90);
+        forward(3);
+        keyPosition--;
+      }
+      break;
+    case 6:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        forward(5);
+        keyPosition--;
+        startOp = false;
+      }
+      else {
+        turnRight(90);
+        forward(5);
+        keyPosition--;
+      }
+      break;
+    case 5:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(4);
+      keyPosition--;
+      break;
+    case 4:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnRight(90);
+        startOp = false;
+      }
+      turnRight(90);
+      forward(3);
+      keyPosition--;
+      break;
+    case 3:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnRight(180);
+        startOp = false;
+      }
+      forward(3);
+      turnRight(90);
+      forward(4);
+      turnLeft(90);
+      backward(2);
+      keyPosition--;
+      break;
+    case 2:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(4);
+      turnRight(90);
+      forward(2);
+      keyPosition--;
+      break;
+    case 1:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      backward(5);
+      backward(1);
+      keyPosition = 0;
+//      if(startOp) { // change the angle to "face" home
+//        backward(5);
+//        backward(1);
+//        keyPosition = 0;
+//        startOp = false;
+//      }
+      break;
+    case 0:
+      if(keyPosition == firePosition) {
+        fireCompletion = GoalFound;
+        return;
+      }
+      //currentObjective = C;
+      break;
+
+      
+  }
+}
+
+void homeOperation() {
+  //static boolean startOp = true;
+  switch(keyPosition) {
+    case 19:
+      if(startOp) { // change the angle to "face" home
+        turnLeft(180);
+        startOp = false;
+      }
+      forward(3);
+      keyPosition--;
       break;
     case 18:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(90);
         startOp = false;
       }    
+      turnLeft(90);
+      forward(4);
+      keyPosition--;
       break;
     case 17:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(90);
         startOp = false;
       }
+      turnLeft(90);
+      forward(4);
+      keyPosition--;
       break;
     case 16:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(180);
         startOp = false;
       }
+      forward(3);
+      keyPosition--;
       break;
     case 15:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(90);
         startOp = false;
       }
+      turnLeft(90);
+      forward(5);
+      turnRight(90);
+      keyPosition--;
       break;
     case 14:
+      if(firePosition != 99) {
+        forward(1);
+        turnRight(90);
+        startOp = false;
+        firePosition = 99;
+      }
       if(startOp) { // change the angle to "face" home
-
+        backward(1);
+        turnLeft(90);
         startOp = false;
       }
+      forward(5);
+      forward(2);
+      keyPosition = 11;
       break;
     case 13:
+      if(firePosition != 99) {
+        backward(1);
+        turnLeft(90);
+        forward(3.5);
+        keyPosition = 11;
+        startOp = false;
+        firePosition = 99;
+      }
       if(startOp) { // change the angle to "face" home
-
+        forward(1);
+        turnRight(90);
+        forward(3.5);
+        keyPosition = 11;
         startOp = false;
       }
       break;
     case 12:
+      if(firePosition != 99) {
+        forward(2);
+        turnLeft(90);
+        forward(5);
+        turnRight(90);
+        backward(0.5);
+        keyPosition--;
+        firePosition = 99;
+        startOp = false;
+      }
       if(startOp) { // change the angle to "face" home
-
+        backward(2);
+        turnRight(90);
+        forward(5);
+        turnRight(90);
+        backward(0.5);
+        keyPosition--;
         startOp = false;
       }
       break;
     case 11:
+      if(firePosition != 99) {
+        forward(1);
+        turnRight(90);
+        startOp = false;
+        firePosition = 99;
+      }
       if(startOp) { // change the angle to "face" home
-
+        backward(1);
+        turnLeft(90);
         startOp = false;
       }
+      turnLeft(90);
+      forward(3);
+      keyPosition--;
       break;
     case 10:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(180);
         startOp = false;
       }
+      forward(3);
+      turnLeft(90);
+      keyPosition--;
       break;
     case 9:
       if(startOp) { // change the angle to "face" home
-
+        turnRight(90);
         startOp = false;
       }
+      forward(5);
+      keyPosition = 7;
       break;
     case 8:
       if(startOp) { // change the angle to "face" home
-
+        backward(3);
+        turnLeft(90);
+        forward(3);
+        keyPosition--;
         startOp = false;
       }
       break;
     case 7:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(90);   
         startOp = false;
       }
+      forward(5);
+      turnRight(90);
+      forward(1);
+      keyPosition = 2;
       break;
     case 6:
+      if(firePosition != 99) {
+        backward(3);
+        turnRight(90);
+        firePosition = 99;
+        startOp = false;
+      }
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(90);
+        forward(3);
+        turnLeft(90);
+        keyPosition = 7;
         startOp = false;
       }
       break;
     case 5:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(180);
+        forward(4);
+        keyPosition--;
         startOp = false;
       }
       break;
     case 4:
       if(startOp) { // change the angle to "face" home
-
+        turnRight(90);
         startOp = false;
       }
+      turnRight(90);
+      forward(2);
+      keyPosition--;
       break;
     case 3:
       if(startOp) { // change the angle to "face" home
-
+        turnRight(180);
         startOp = false;
       }
+      forward(5);
+      keyPosition = 0;
       break;
     case 2:
       if(startOp) { // change the angle to "face" home
-
+        turnLeft(180);
         startOp = false;
       }
+      forward(4);
+      turnLeft(90);
+      forward(4);
+      keyPosition = 0;
       break;
     case 1:
-      if(startOp) { // change the angle to "face" home
-
-        startOp = false;
-      }
+      //if(startOp) { // change the angle to "face" home
+      backward(5);
+      backward(1);
+      keyPosition = 0;
+      startOp = false;
+      //}
       break;
     case 0:
       currentObjective = C;
