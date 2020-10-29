@@ -447,7 +447,7 @@ void findGoal() {
       break;
     case 12: // position at 14 18 0
       forward(4);
-      if(withinPerimeter(4, distanceToGoal())) {
+      if(withinPerimeter(2, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
         }
@@ -466,7 +466,7 @@ void findGoal() {
       forward(4);
       turnRight(90);
       forward(2);
-      if(withinPerimeter(3, distanceToGoal())) {
+      if(withinPerimeter(2.25, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
         }
@@ -517,7 +517,7 @@ void findGoal() {
       forward(1);
       turnLeft(90);
       forward(4);    
-      if(withinPerimeter(2, distanceToGoal())) {
+      if(withinPerimeter(3, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
         }
@@ -532,7 +532,7 @@ void findGoal() {
     case 17: // position at 18 8 90  
       turnRight(90);
       forward(3);
-      if(withinPerimeter(3, distanceToGoal())) {
+      if(withinPerimeter(2.5, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
         }
@@ -715,10 +715,10 @@ void checkGoalWater() {
       break;
     case 1: // move to one direction
       frontDistance = sensorValue();
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[1] = distanceToGoal();
@@ -728,10 +728,10 @@ void checkGoalWater() {
           goalIdentified = true;
         }
         else  if(whichGoal == 2)  {
-          if(frontDistance > 2.3) {
+          if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           firePosition = keyPosition;
@@ -742,10 +742,10 @@ void checkGoalWater() {
           return;
         }
       }
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
       exploredAngle++;
@@ -753,10 +753,10 @@ void checkGoalWater() {
     case 2:
       turnRight(90);
       frontDistance = sensorValue();
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[2] = distanceToGoal();
@@ -765,11 +765,11 @@ void checkGoalWater() {
         if(whichGoal == 1) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2.3)  {
+        else  if(whichGoal == 2.2)  {
           if(frontDistance > 2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           turnLeft(90);
@@ -783,10 +783,10 @@ void checkGoalWater() {
       }
 
       exploredAngle++;
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
 
@@ -794,10 +794,10 @@ void checkGoalWater() {
     case  3:
       turnRight(90);
       frontDistance = sensorValue();
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[3] = distanceToGoal();
@@ -806,11 +806,11 @@ void checkGoalWater() {
         if(whichGoal == 1) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2.3) {
+        else  if(whichGoal == 2.2) {
           if(frontDistance > 2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           turnRight(180);
@@ -823,20 +823,20 @@ void checkGoalWater() {
         }
       }
       exploredAngle++;
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
       break;
     case  4:
       turnRight(90);
       frontDistance = sensorValue();
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[4] = distanceToGoal();
@@ -846,10 +846,10 @@ void checkGoalWater() {
           goalIdentified = true;
         }
         else  if(whichGoal == 2)  {
-          if(frontDistance > 2.3) {
+          if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           turnRight(90);
@@ -861,10 +861,10 @@ void checkGoalWater() {
           return;
         }
       }
-      if(frontDistance > 2.3) {
+      if(frontDistance > 2.2) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
       turnRight(90);
@@ -950,28 +950,28 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.1) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
-            forward(0.6);
+          else if(frontDistance > 0.55) {
+            forward(0.55);
           }
 
           // coming back
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
-            backward(0.6);
+          else if(frontDistance > 0.55) {
+            backward(0.55);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
             waterCompletion = GoalReached;
@@ -1003,7 +1003,10 @@ void reachGoal() {
             }
             return;
           }
-          turnRight(30); 
+          if(i != 3) {
+            turnRight(30); 
+          }
+          
         }
         turnLeft(90);
         if(currentObjective == W) {
@@ -1021,28 +1024,28 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
-            forward(0.6);
+          else if(frontDistance > 0.55) {
+            forward(0.55);
           }
 
           // coming back
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
-            backward(0.6);
+          else if(frontDistance > 0.55) {
+            backward(0.55);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
             waterCompletion = GoalReached;
@@ -1074,7 +1077,9 @@ void reachGoal() {
             }
             return;
           }
-          turnLeft(30); 
+          if(i != 3) {
+            turnLeft(30); 
+          } 
         }
         turnRight(90);
         if(currentObjective == W) {
@@ -1095,28 +1100,28 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
-            forward(0.6);
+          else if(frontDistance > 0.55) {
+            forward(0.55);
           }
 
           // coming back
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
-            backward(0.6);
+          else if(frontDistance > 0.55) {
+            backward(0.55);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
             waterCompletion = GoalReached;
@@ -1131,6 +1136,7 @@ void reachGoal() {
                 turnLeft(90);
                 break;
             }
+            turnLeft(90);
             return;
           }
           else if(goalAchieved() == 2 && currentObjective == F) {
@@ -1146,9 +1152,12 @@ void reachGoal() {
                 turnLeft(90);
                 break;
             }
+            turnLeft(90);
             return;
           }
-          turnRight(30); 
+          if(i != 3) {
+            turnRight(30); 
+          }
         }
         turnLeft(180);
         if(currentObjective == W) {
@@ -1166,28 +1175,28 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
-            forward(0.6);
+          else if(frontDistance > 0.55) {
+            forward(0.55);
           }
 
           // coming back
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
-            backward(0.6);
+          else if(frontDistance > 0.55) {
+            backward(0.55);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
             waterCompletion = GoalReached;
@@ -1219,7 +1228,9 @@ void reachGoal() {
             }
             return;
           }
-          turnRight(30); 
+          if(i != 3) {
+            turnRight(30); 
+          }
         }
         turnLeft(90);
         if(currentObjective == W) {
@@ -1240,28 +1251,28 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
-            forward(0.6);
+          else if(frontDistance > 0.55) {
+            forward(0.55);
           }
 
           // coming back
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
-            backward(0.6);
+          else if(frontDistance > 0.55) {
+            backward(0.55);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
             waterCompletion = GoalReached;
@@ -1276,6 +1287,7 @@ void reachGoal() {
                 turnRight(90);
                 break;
             }
+            turnRight(90);
             return;
           }
           else if(goalAchieved() == 2 && currentObjective == F) {
@@ -1291,9 +1303,12 @@ void reachGoal() {
                 turnRight(90);
                 break;
             }
+            turnRight(90);
             return;
           }
-          turnLeft(30); 
+          if(i != 3) {
+            turnLeft(30); 
+          }
         }
         turnRight(180);
         if(currentObjective == W) {
@@ -1312,13 +1327,13 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
+          else if(frontDistance > 0.55) {
             forward(0.5);
           }
 
@@ -1326,13 +1341,13 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
+          else if(frontDistance > 0.55) {
             backward(0.5);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
@@ -1348,6 +1363,7 @@ void reachGoal() {
                 turnLeft(90);
                 break;
             }
+            turnLeft(90);
             return;
           }
           else if(goalAchieved() == 2 && currentObjective == F) {
@@ -1363,9 +1379,12 @@ void reachGoal() {
                 turnLeft(90);
                 break;
             }
+            turnLeft(90);
             return;
           }
-          turnRight(30); 
+          if(i != 3) {
+            turnRight(30); 
+          }
         }
         turnLeft(180);
         if(currentObjective == W) {
@@ -1386,28 +1405,28 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
-            forward(0.6);
+          else if(frontDistance > 0.55) {
+            forward(0.55);
           }
 
           // coming back
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
-            backward(0.6);
+          else if(frontDistance > 0.55) {
+            backward(0.55);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
             waterCompletion = GoalReached;
@@ -1422,6 +1441,7 @@ void reachGoal() {
                 turnRight(90);
                 break;
             }
+            turnRight(90);
             return;
           }
           else if(goalAchieved() == 2 && currentObjective == F) {
@@ -1437,9 +1457,12 @@ void reachGoal() {
                 turnRight(90);
                 break;
             }
+            turnRight(90);
             return;
           }
-          turnLeft(30); 
+          if(i != 3) {
+            turnLeft(30); 
+          }
         }
         turnRight(180);
         if(currentObjective == W) {
@@ -1457,28 +1480,28 @@ void reachGoal() {
           if(frontDistance > 3.4) {
             forward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             forward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             forward(1);
           }
-          else if(frontDistance > 0.6) {
-            forward(0.6);
+          else if(frontDistance > 0.55) {
+            forward(0.55);
           }
 
           // coming back
           if(frontDistance > 3.4) {
             backward(3);
           }
-          else if(frontDistance > 2.3) {
+          else if(frontDistance > 2.2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
-          else if(frontDistance > 0.6) {
-            backward(0.6);
+          else if(frontDistance > 0.55) {
+            backward(0.55);
           }
           if(goalAchieved() == 1 && currentObjective == W) {
             waterCompletion = GoalReached;
@@ -1510,7 +1533,9 @@ void reachGoal() {
             }
             return;
           }
-          turnLeft(30); 
+          if(i != 3) {
+            turnLeft(30); 
+          }
         }
         turnRight(90);
         if(currentObjective == W) {
@@ -1559,7 +1584,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[1] = distanceToGoal();
@@ -1572,7 +1597,7 @@ void checkGoalFire() {
           if(frontDistance > 2.5) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           keyPosition++;
@@ -1583,7 +1608,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
       exploredAngle++;
@@ -1594,7 +1619,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[2] = distanceToGoal();
@@ -1607,7 +1632,7 @@ void checkGoalFire() {
           if(frontDistance > 2.5) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           turnLeft(90);
@@ -1620,7 +1645,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
 
@@ -1631,7 +1656,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[3] = distanceToGoal();
@@ -1644,7 +1669,7 @@ void checkGoalFire() {
           if(frontDistance > 2) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           turnRight(180);
@@ -1657,7 +1682,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
       break;
@@ -1667,7 +1692,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         forward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         forward(1);
       }
       distanceGoals[4] = distanceToGoal();
@@ -1680,7 +1705,7 @@ void checkGoalFire() {
           if(frontDistance > 2.5) {
             backward(2);
           }
-          else if(frontDistance > 1.2) {
+          else if(frontDistance > 1.11) {
             backward(1);
           }
           turnRight(90);
@@ -1692,7 +1717,7 @@ void checkGoalFire() {
       if(frontDistance > 2.5) {
         backward(2);
       }
-      else if(frontDistance > 1.2) {
+      else if(frontDistance > 1.11) {
         backward(1);
       }
       turnRight(90);
@@ -2087,7 +2112,7 @@ void backToFire() {
         return;
       }
       backward(5);
-      backward(1);
+      backward(2);
       keyPosition = 0;
 //      if(startOp) { // change the angle to "face" home
 //        backward(5);
@@ -2335,7 +2360,7 @@ void homeOperation() {
     case 1:
       //if(startOp) { // change the angle to "face" home
       backward(5);
-      backward(1);
+      backward(2);
       keyPosition = 0;
       startOp = false;
       //}
