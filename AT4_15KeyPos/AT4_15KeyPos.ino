@@ -21,26 +21,31 @@ enum Buttons {
 };
 Buttons whatbuttons; // Current button pressed
 
-int counter = 0;
-boolean start = false;
+int counter = 0; // use to update the clock/LCD every 150 milliseconds
+boolean start = false; 
 
-boolean startup = true; 
+boolean startup = true; // before pressing select to start the autonomous robot
 boolean completed = false;
 float currentAngle = 0; // to keep track of the direction of the robot 
 
 int firePosition = 99; // if not 99, it means that the fire is found before the water and will tell us where
 boolean startOp = true;
 boolean back = true;
-boolean foundTheFire = false;
+boolean foundTheFire = false; // if fire was found before water  
+
+// both of these variables  used to find in which quadrant the goal is from the key position
+int secondMinAngle; 
+int minimumAngle;
+
 
 enum Objective {
-  idle,
-  W,
-  F,
-  H,
-  C
+  idle, //before pressing select 
+  W, // finding water 
+  F, // finding fire 
+  H, // going back home
+  C // completed mission
 };
-Objective currentObjective = idle;
+Objective currentObjective = idle; 
 
 enum objectiveCompletion {
   GoalFinding, //explore key positions for goals 
@@ -48,8 +53,8 @@ enum objectiveCompletion {
   GoalReaching, //reach the goal whether fire or water
   GoalReached // get ready for next mission and show completion
 };
-objectiveCompletion waterCompletion = GoalFinding;
-objectiveCompletion fireCompletion = GoalFinding;
+objectiveCompletion waterCompletion = GoalFinding; // goal state for water
+objectiveCompletion fireCompletion = GoalFinding; // goal state for fire
 
 int completion;
 
@@ -62,7 +67,7 @@ ISR(TIMER2_OVF_vect) { //Chapter 16
   milliseconds += 1; //increment every ms
   
   counter++;
-  if(start && currentObjective != C && counter >= 150) {
+  if(start && currentObjective != C && counter >= 150) { // only update time and LCD if not complete 
     counter = 0;
     printClock(mymillis()/60000, (mymillis() / 1000) % 60); //Convert the values to the print the clock
   }
@@ -91,10 +96,6 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   if(start) {    
-//    if(currentObjective != C) {
-//      printClock(mymillis()/60000, (mymillis() / 1000) % 60); //Convert the values to the print the clock
-//    }
-
     switch(currentObjective) {
       case W:
         waterOperation();
@@ -106,7 +107,7 @@ void loop() {
         homeOperation();
         break;
       case C:
-        if(!completed) {
+        if(!completed) { // last update of the clock before it is completed
           printClock(mymillis()/60000, (mymillis() / 1000) % 60);
           completed = true;
         }
@@ -120,10 +121,9 @@ void loop() {
     whatbuttons = readLCDButtons();
     if(whatbuttons == btnSELECT) {
       start = true;
-      milliseconds = 0;
+      milliseconds = 0; // resetting clock
       startup = false;
       currentObjective = W;
-      //turnRight(180);
     }
   }
 }
@@ -151,12 +151,12 @@ void printClock(int minutes, int seconds) { // print clock for startup mode
     lcd.print('0');
   }
   lcd.print(seconds);
-  modeToText();
+  modeToText(); // depending on objective, print adequate letter 
 }
 
 void modeToText() {
   lcd.print(" ");
-  switch(currentObjective) {
+  switch(currentObjective) { // depending on objective, print adequate letter 
     case idle:
       break;
     case W:
@@ -276,7 +276,7 @@ void findGoal() {
       forward(5);
       forward(2);
       mydelay(1000);
-      if(withinPerimeter(3, distanceToGoal())) {
+      if(withinPerimeter(3.5, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
         }
@@ -401,7 +401,8 @@ void findGoal() {
     case 9: // position at 4 18.5 270
       backward(1);
       turnRight(90);
-      forward(3.5);
+      forward(3);
+      forward(0.5);
       if(withinPerimeter(3, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
@@ -497,7 +498,8 @@ void findGoal() {
     case 15: // position at 14 11 0
       forward(1);
       turnLeft(90);
-      forward(2.5);
+      forward(2);
+      forward(0.5);
       turnLeft(90);
       forward(1);
       if(withinPerimeter(3, distanceToGoal())) {
@@ -592,10 +594,13 @@ void findGoal() {
     case 21:
       if(currentObjective == F) {
         firePosition = 0;
-        fireCompletion = GoalFound;
+        fireCompletion = GoalReached;
+      }
+      else if(currentObjective == W) {
+        waterCompletion = GoalReached;
       }
   }
-  completion = goalAchieved();
+  completion = goalAchieved(); // check if goal has been achieved or ran over during the travel
   if(completion == 1 && waterCompletion != GoalReached) {
     waterCompletion = GoalReached;
     keyPosition++;
@@ -609,7 +614,7 @@ void findGoal() {
   
 }
 
-float sensorValue() {
+float sensorValue() { // return sensor value
   float value;
   do {
   PrintMessage("CMD_SEN_IR");
@@ -617,8 +622,8 @@ float sensorValue() {
   int cutString = currentString.length();
   currentString.remove(cutString-2);  
   value = currentString.toFloat(); 
-  }while(value == 0);
-  if(value != value) {
+  }while(value == 0); // avoids returning 0 as error
+  if(value != value) { // NaN check
     return 5;
   }
   else {
@@ -627,7 +632,7 @@ float sensorValue() {
   
 }
 
-float receiveGoalDistance() {
+float receiveGoalDistance() { // receiving the goal distance 
     String currentString = Serial.readString();
     int cutString = currentString.length();
     currentString.remove(cutString-2);  
@@ -636,7 +641,7 @@ float receiveGoalDistance() {
     
 }
 
-float distanceToGoal() {
+float distanceToGoal() { // return distance to goal
   float distanceGoal;
   float tempGoal;
   do {
@@ -647,7 +652,7 @@ float distanceToGoal() {
     PrintMessage("CMD_SEN_PING");
     mydelay(100);    
     tempGoal = receiveGoalDistance();
-  } while(distanceGoal != tempGoal);
+  } while(distanceGoal != tempGoal); // check if both values are equal before returning the value
   return distanceGoal;
 }
 
@@ -664,7 +669,7 @@ boolean withinPerimeter(float perimeter, float goalDistance) { //check for each 
   }
 }
 
-int goalAchieved() {
+int goalAchieved() { // check which goal has been achieved
   PrintMessage("CMD_SEN_GOAL");
   String currentString = Serial.readString();
   int value = currentString.toInt();
@@ -672,7 +677,7 @@ int goalAchieved() {
   return value;
 }
 
-int goalNumber() {
+int goalNumber() { // check for the ID or the goal and return it 
   PrintMessage("CMD_SEN_ID");
   String currentString = Serial.readString();
   int value = currentString.toInt();
@@ -680,19 +685,17 @@ int goalNumber() {
   
 }
 
-int secondMinAngle;
 
-int minimumAngle;
 
-void checkGoalWater() {
+void checkGoalWater() { // check in which quadrant the goal is in 
   int whichGoal;
   float frontDistance;
   float minimum; 
   int minimumIndex;
   
 
-  static int exploredAngle = 0;
-  static float distanceGoals[5];
+  static int exploredAngle = 0; // 0 90 180 270 
+  static float distanceGoals[5]; // store all minimums 
   static boolean goalIdentified = false;
   switch(exploredAngle) {
     case 0: //check if within 2 m now 
@@ -702,8 +705,10 @@ void checkGoalWater() {
         if(whichGoal == 1) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2) {
-          firePosition = keyPosition;
+        else  if(whichGoal == 2) { 
+          if(firePosition == 99) {
+            firePosition = keyPosition;
+          }
           keyPosition++;
           waterCompletion = GoalFinding;
           exploredAngle = 0;
@@ -713,7 +718,7 @@ void checkGoalWater() {
       }
       exploredAngle++;
       break;
-    case 1: // move to one direction
+    case 1: // move to one direction (0)
       frontDistance = sensorValue();
       if(frontDistance > 2.2) {
         forward(2);
@@ -734,7 +739,10 @@ void checkGoalWater() {
           else if(frontDistance > 1.11) {
             backward(1);
           }
-          firePosition = keyPosition;
+          if(firePosition == 99) {
+            firePosition = keyPosition;
+          }
+          
           keyPosition++;
           waterCompletion = GoalFinding;
           exploredAngle = 0;
@@ -750,7 +758,7 @@ void checkGoalWater() {
       }
       exploredAngle++;
       break;
-    case 2:
+    case 2: // move to 90 degrees 
       turnRight(90);
       frontDistance = sensorValue();
       if(frontDistance > 2.2) {
@@ -765,7 +773,7 @@ void checkGoalWater() {
         if(whichGoal == 1) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2.2)  {
+        else  if(whichGoal == 2)  {
           if(frontDistance > 2) {
             backward(2);
           }
@@ -773,7 +781,9 @@ void checkGoalWater() {
             backward(1);
           }
           turnLeft(90);
-          firePosition = keyPosition;
+          if(firePosition == 99) {
+            firePosition = keyPosition;
+          }
           keyPosition++;
           waterCompletion = GoalFinding;
           exploredAngle = 0;
@@ -791,7 +801,7 @@ void checkGoalWater() {
       }
 
       break;
-    case  3:
+    case  3: // move 180 degrees 
       turnRight(90);
       frontDistance = sensorValue();
       if(frontDistance > 2.2) {
@@ -806,7 +816,7 @@ void checkGoalWater() {
         if(whichGoal == 1) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2.2) {
+        else  if(whichGoal == 2) {
           if(frontDistance > 2) {
             backward(2);
           }
@@ -814,7 +824,9 @@ void checkGoalWater() {
             backward(1);
           }
           turnRight(180);
-          firePosition = keyPosition;
+          if(firePosition == 99) {
+            firePosition = keyPosition;
+          }
           keyPosition++;
           waterCompletion = GoalFinding;
           exploredAngle = 0;
@@ -830,7 +842,7 @@ void checkGoalWater() {
         backward(1);
       }
       break;
-    case  4:
+    case  4: // move 270 degrees 
       turnRight(90);
       frontDistance = sensorValue();
       if(frontDistance > 2.2) {
@@ -853,7 +865,9 @@ void checkGoalWater() {
             backward(1);
           }
           turnRight(90);
-          firePosition = keyPosition;
+          if(firePosition == 99) {
+            firePosition = keyPosition;
+          }
           keyPosition++;
           waterCompletion = GoalFinding;
           exploredAngle = 0;
@@ -882,13 +896,13 @@ void checkGoalWater() {
         turnRight(180);
         break;
     }
-    waterCompletion = GoalReached;
-    keyPosition++;
+    waterCompletion = GoalReached; // if goal reached 
+    keyPosition++; // time to check for fire 
     return;
   }
 
-  if(goalIdentified && exploredAngle == 5) {
-    //find minimum out of all the arrays
+  if(goalIdentified && exploredAngle == 5) { 
+    //find minimum out of all the arrays and the second minimum to find which quadrant it is 
     minimum = distanceGoals[1];
     minimumAngle = 0;
     for(int i = 2; i < 5; i++){
@@ -934,10 +948,13 @@ void checkGoalWater() {
     keyPosition++;
 
   }
-
+  else if (exploredAngle == 5 && !goalIdentified) {
+    keyPosition++;
+    waterCompletion = GoalFinding;
+  }
 }
 
-void reachGoal() {
+void reachGoal() { // 30 degrees sweep depending on each quadrant it is in 
   static int directionScan; // 0 is CCW and 1 os CW
   float frontDistance = 0;
   float goalDistance = 0;
@@ -1552,7 +1569,7 @@ void reachGoal() {
 }
 
 
-void checkGoalFire() {
+void checkGoalFire() { // same concept as checkGoalWater (check for each quadrant and determine where the goal is situated )
   int whichGoal;
   float frontDistance;
   float minimum; 
@@ -1623,7 +1640,7 @@ void checkGoalFire() {
         forward(1);
       }
       distanceGoals[2] = distanceToGoal();
-      if(withinPerimeter(2, distanceGoals[1])) {
+      if(withinPerimeter(2, distanceGoals[2])) {
         whichGoal = goalNumber();
         if(whichGoal == 2) {
           goalIdentified = true;
@@ -1665,7 +1682,7 @@ void checkGoalFire() {
         if(whichGoal == 2) {
           goalIdentified = true;
         }
-        else  if(whichGoal == 2.5) {
+        else  if(whichGoal == 1) {
           if(frontDistance > 2) {
             backward(2);
           }
@@ -1785,11 +1802,14 @@ void checkGoalFire() {
     fireCompletion = GoalReaching;
 
   }
+  else if (exploredAngle == 5 && !goalIdentified) {
+    fireCompletion = GoalReached;
+  }
 
 }
 
-
-void waterOperation() {
+ 
+void waterOperation() { // the steps to find water 
   switch(waterCompletion) {
     case GoalFinding:
       findGoal();
@@ -1807,7 +1827,7 @@ void waterOperation() {
 }
 
 
-void fireOperation() {
+void fireOperation() { // the steps to find fire 
   switch(fireCompletion) {
     case GoalFinding:
       if(firePosition != 99) {
@@ -1834,7 +1854,7 @@ void fireOperation() {
 }
 
 
-void backToFire() {
+void backToFire() { // if fire is found before water, it checks for each key position on the way back home 
   //static boolean startOp = true;
   foundTheFire = true;
   switch(keyPosition) {
@@ -1915,7 +1935,8 @@ void backToFire() {
       }
       forward(1);
       turnRight(90);
-      forward(2.5);
+      forward(2);
+      forward(0.5);
       turnRight(90);
       forward(1);
       keyPosition--;
@@ -1999,7 +2020,8 @@ void backToFire() {
         //turnRight(180);
         startOp = false;
       }
-      backward(3.5);
+      backward(3);
+      backward(0.5);
       turnLeft(90);
       forward(1);
       keyPosition--;
@@ -2103,7 +2125,7 @@ void backToFire() {
       }
       forward(4);
       turnRight(90);
-      forward(2);
+      forward(3);
       keyPosition--;
       break;
     case 1:
@@ -2133,7 +2155,7 @@ void backToFire() {
   }
 }
 
-void homeOperation() {
+void homeOperation() { // finding the shortest path home from each key positon = skipping some key positions that are not on the way back 
   //static boolean startOp = true;
   switch(keyPosition) {
     case 20:
@@ -2206,7 +2228,8 @@ void homeOperation() {
       if(foundTheFire) {
         backward(1);
         turnLeft(90);
-        forward(3.5);
+        forward(3);
+        forward(0.5);
         keyPosition = 12;
         startOp = false;
         foundTheFire = false;
@@ -2214,7 +2237,8 @@ void homeOperation() {
       if(startOp) { // change the angle to "face" home
         forward(1);
         turnRight(90);
-        forward(3.5);
+        forward(3);
+        forward(0.5);
         keyPosition = 12;
         startOp = false;
       }
@@ -2277,7 +2301,8 @@ void homeOperation() {
       if(startOp) { // change the angle to "face" home
         startOp = false;
       }
-      backward(3.5);
+      backward(3);
+      backward(0.5);
       turnRight(90);
       forward(3);
       turnRight(90);
@@ -2379,94 +2404,49 @@ void completeOperation() {
 
 
 
-void forward(float distance) {
-  if(distance== 0.5)
-  {
-    distance= (distance/1.04) + 0.001;
+void forward(float distance) { // reducing the noise and error of the robot for each distance 
+  if(distance == 0.5) {
+    distance = (distance/1.04) + 0.001;
   }
-  else if(distance== 1)
-  {
-    distance= (distance/1.04) + 0.002;
+  else if(distance == 1) {
+    distance = (distance/1.04) + 0.002;
   }
-  else if(distance== 1.5)
-  {
-    distance= (distance/1.04) + 0.002;
+  else if(distance == 2) {
+    distance = (distance/1.04) + 0.003;
   }
-  else if(distance== 2)
-  {
-    distance= (distance/1.04) + 0.003;
+  else if(distance == 3) {
+    distance = (distance/1.04) + (0.062/1.04);
   }
-  else if(distance== 2.5)
-  {
-    distance= (distance/1.04) + (0.05/1.04);
+  else if(distance == 4) {
+    distance = (distance/1.04) + (0.073/1.04);
   }
-  else if(distance== 3)
-  {
-    distance= (distance/1.04) + (0.062/1.04);
+  else if(distance == 5) {
+    distance = (distance/1.04) + (0.094/1.04);
   }
-  else if(distance== 3.5)
-  {
-    distance= (distance/1.04) + (0.063/1.04);
-  }
-  else if(distance== 4)
-  {
-    distance= (distance/1.04) + (0.073/1.04);
-  }
-  else if(distance== 4.5)
-  {
-    distance= (distance/1.04) + (0.083/1.04);
-  }
-  else if(distance== 5)
-  {
-    distance= (distance/1.04) + (0.094/1.04);
-  }
-  else
-  {
+  else {
     return;
   }
   PrintMessage("CMD_ACT_LAT_1_" + (String) distance);
 }
 
-void backward(float distance) {
-  if(distance== 0.5)
-  {
-    distance= (distance/1.04) + 0.001;
+void backward(float distance) { // reducing the noise and error of the robot for each distance 
+  if(distance == 0.5) {
+    distance = (distance/1.04) + 0.001;
   }
-  else if(distance== 1)
-  {
-    distance= (distance/1.04) + 0.002;
+  else if(distance == 1) {
+    distance = (distance/1.04) + 0.002;
   }
-  else if(distance== 1.5)
-  {
-    distance= (distance/1.04) + 0.002;
+  else if(distance == 2) {
+    distance = (distance/1.04) + 0.003;
   }
-  else if(distance== 2)
-  {
-    distance= (distance/1.04) + 0.003;
+  else if(distance == 3) {
+    distance = (distance/1.04) + (0.062/1.04);
   }
-  else if(distance== 2.5)
-  {
-    distance= (distance/1.04) + (0.05/1.04);
+  else if(distance == 4) {
+    distance = (distance/1.04) + (0.073/1.04);
   }
-  else if(distance== 3)
-  {
-    distance= (distance/1.04) + (0.062/1.04);
-  }
-  else if(distance== 3.5)
-  {
-    distance= (distance/1.04) + (0.063/1.04);
-  }
-  else if(distance== 4)
-  {
-    distance= (distance/1.04) + (0.073/1.04);
-  }
-  else if(distance== 4.5)
-  {
-    distance= (distance/1.04) + (0.083/1.04);
-  }
-  else if(distance== 5)
-  {
-    distance= (distance/1.04) + (0.094/1.04);
+  else if(distance == 5) {
+    distance = (distance/1.04) + (0.094/1.04);
   }
   else
   {
@@ -2475,18 +2455,20 @@ void backward(float distance) {
   PrintMessage("CMD_ACT_LAT_0_" + (String) distance);
 }
 
-void turnLeft(float angle) {
-  for(int i=0; i<angle*2; i++)
+void turnLeft(float angle) { // turning by 0.5 results in less noise 
+  for(int i=0; i < angle*2; i++)
   {
     PrintMessage("CMD_ACT_ROT_0_0.5");
   }
-  currentAngle = currentAngle - angle;
+  mydelay(1000);
+  currentAngle = currentAngle - angle; // current angle checking which direction the robot is facing
 }
 
-void turnRight(float angle) {
-  for(int i=0; i<angle*2; i++)
+void turnRight(float angle) {  // turning by 0.5 results in less noise
+  for(int i=0; i< angle*2; i++)
   {
     PrintMessage("CMD_ACT_ROT_1_0.5");
   }
-  currentAngle = currentAngle + angle;
+  mydelay(1000);
+  currentAngle = currentAngle + angle; // current angle checking which direction the robot is facing
 }
