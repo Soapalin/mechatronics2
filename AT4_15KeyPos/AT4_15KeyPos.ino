@@ -159,7 +159,6 @@ void modeToText() {
   switch(currentObjective) { // depending on objective, print adequate letter 
     case idle:
       break;
-    case W:
       lcd.print("W");
       break;
     case F: 
@@ -403,7 +402,6 @@ void findGoal() {
       turnRight(90);
       forward(3);
       forward(0.5);
-      lcd.print(distanceToGoal());
       if(withinPerimeter(3, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
@@ -1856,7 +1854,6 @@ void fireOperation() { // the steps to find fire
       checkGoalFire();
       break;
     case GoalReaching:
-       lcd.print("reachGoal");
        reachGoal();
       break;
     case GoalReached:
