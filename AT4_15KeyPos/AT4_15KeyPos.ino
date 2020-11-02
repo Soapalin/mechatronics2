@@ -403,6 +403,7 @@ void findGoal() {
       turnRight(90);
       forward(3);
       forward(0.5);
+      lcd.print(distanceToGoal());
       if(withinPerimeter(3, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
@@ -419,7 +420,7 @@ void findGoal() {
       backward(0.5);
       turnRight(90);
       forward(3);
-      if(withinPerimeter(3, distanceToGoal())) {
+      if(withinPerimeter(2.5, distanceToGoal())) {
         if(waterCompletion == GoalFinding) {
           waterCompletion = GoalFound;
         }
@@ -618,6 +619,7 @@ float sensorValue() { // return sensor value
   float value;
   do {
   PrintMessage("CMD_SEN_IR");
+  mydelay(200);
   String currentString = Serial.readString();
   int cutString = currentString.length();
   currentString.remove(cutString-2);  
@@ -671,6 +673,7 @@ boolean withinPerimeter(float perimeter, float goalDistance) { //check for each 
 
 int goalAchieved() { // check which goal has been achieved
   PrintMessage("CMD_SEN_GOAL");
+  mydelay(100);
   String currentString = Serial.readString();
   int value = currentString.toInt();
   //lcd.print(value);
@@ -679,6 +682,7 @@ int goalAchieved() { // check which goal has been achieved
 
 int goalNumber() { // check for the ID or the goal and return it 
   PrintMessage("CMD_SEN_ID");
+  mydelay(100);
   String currentString = Serial.readString();
   int value = currentString.toInt();
   return value;
@@ -1574,8 +1578,6 @@ void checkGoalFire() { // same concept as checkGoalWater (check for each quadran
   float frontDistance;
   float minimum; 
   int minimumIndex;
-  
-
   static int exploredAngle = 0;
   static float distanceGoals[5];
   static boolean goalIdentified = false;
@@ -1590,6 +1592,8 @@ void checkGoalFire() { // same concept as checkGoalWater (check for each quadran
         else  if(whichGoal == 1) {
           //firePosition = keyPosition;
           keyPosition++;
+          exploredAngle = 0;
+          fireCompletion = GoalFinding;
           //waterCompletion = GoalFinding;
           return;
         }
@@ -1619,6 +1623,7 @@ void checkGoalFire() { // same concept as checkGoalWater (check for each quadran
           }
           keyPosition++;
           fireCompletion = GoalFinding;
+          exploredAngle = 0;
           return;
         }
       }
@@ -1654,6 +1659,7 @@ void checkGoalFire() { // same concept as checkGoalWater (check for each quadran
           }
           turnLeft(90);
           keyPosition++;
+          exploredAngle = 0;
           fireCompletion = GoalFinding;
           return;
         }
@@ -1691,6 +1697,7 @@ void checkGoalFire() { // same concept as checkGoalWater (check for each quadran
           }
           turnRight(180);
           keyPosition++;
+          exploredAngle = 0;
           fireCompletion = GoalFinding;
           return;
         }
@@ -1727,6 +1734,7 @@ void checkGoalFire() { // same concept as checkGoalWater (check for each quadran
           }
           turnRight(90);
           keyPosition++;
+          exploredAngle = 0;
           fireCompletion = GoalFinding;
           return;
         }
@@ -1800,10 +1808,13 @@ void checkGoalFire() { // same concept as checkGoalWater (check for each quadran
 //    lcd.print(" ");
 //    lcd.print(secondMinAngle);
     fireCompletion = GoalReaching;
+    //exploredAngle = 0;
 
   }
   else if (exploredAngle == 5 && !goalIdentified) {
-    fireCompletion = GoalReached;
+    keyPosition++;
+    fireCompletion = GoalFinding;
+    exploredAngle = 0;
   }
 
 }
@@ -1845,6 +1856,7 @@ void fireOperation() { // the steps to find fire
       checkGoalFire();
       break;
     case GoalReaching:
+       lcd.print("reachGoal");
        reachGoal();
       break;
     case GoalReached:
